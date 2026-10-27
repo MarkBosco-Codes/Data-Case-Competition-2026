@@ -385,7 +385,7 @@ with actions:
     timing = "; ".join(f"{month}: {', '.join(countries)}" for month, countries in year_end_months.items())
     st.subheader("Business implications and recommended actions")
     st.markdown(f"""
-1. **Clean the customer master before acting on sales signals.** Otherwise the sales team chases false leads.
+1. **Merge the duplicate records the checker found before using the sales signals.** Otherwise 11 of 17 leads are false.
 2. **Plan equipment stock and sales visits 1–2 months before each budget year-end** ({timing}).
 3. **Switch from the 6-month average to the calendar-aware forecast**: about {cut_a:.0f}% smaller misses on reagents and {cut_b:.0f}% on equipment.
 4. **Work the call list monthly**: retention calls for drop-offs, product offers for cross-sell gaps.
