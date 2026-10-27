@@ -37,6 +37,13 @@ CITY = {  # map markers: one main city per country
 # Data and calculations
 # ---------------------------------------------------------------------------
 
+def load_stress():
+    """Both rounds of the stress test. Round 2 re-ran the baseline world, so drop that copy."""
+    first = pd.read_csv(RESULTS / "stress_test_summary.csv")
+    second = pd.read_csv(RESULTS / "stress_test_v2_summary.csv")
+    return pd.concat([first, second[second["scenario"] != "S0 Baseline"]])
+
+
 @st.cache_data
 def load_data():
     return {
@@ -47,7 +54,7 @@ def load_data():
         "requests": pd.read_csv(DATA / "setup_requests.csv", parse_dates=["submitted", "approved"]),
         "scoreboard": pd.read_csv(RESULTS / "backtest_summary.csv", index_col=0),
         "forecasts": pd.read_csv(RESULTS / "backtest_forecasts.csv"),
-        "stress": pd.read_csv(RESULTS / "stress_test_summary.csv"),
+        "stress": load_stress(),
     }
 
 
@@ -58,13 +65,19 @@ WORLDS = {  # stress-test scenario -> plain description
     "S3 Unknown seasonality": "A seasonal wave that no calendar flag explains",
     "S4 Shocks and breaks": "Surprise outbreaks and a new big contract",
     "S5 Messy world": "All of the above at once",
+    "S6 Outbreaks + stock-ups": "Dengue/flu outbreaks; some customers stock up (one big order, then two small)",
+    "S7 Equipment drives reagents": "Analyser sales (B) lead to reagent orders (A, C) later",
+    "S8 New customer ramp-up": "New customers wait ~18 days for approval, then build up",
+    "S9 All new patterns": "Outbreaks, equipment lead and ramp-up at once",
+    "S10 Contaminated history": "Enquiries logged as orders add about 6% to past order history",
 }
 
 
 def stress_table(stress):
     """One row per harder world: today's method, the 12-month average, the
     calendar regression, and the best method overall in that world."""
-    mape = stress.pivot_table(index="scenario", columns="model", values="MAPE % (mean of seeds)")
+    mape = (stress.pivot_table(index="scenario", columns="model", values="MAPE % (mean of seeds)")
+            .reindex(list(WORLDS)))  # keep S0..S10 in order (sorting by text puts S10 after S1)
     table = mape[[CURRENT, "12-month average", BEST]].copy()
     table["Best method in this world"] = [f"{mape.loc[s].idxmin()} ({mape.loc[s].min():.1f}%)"
                                           for s in mape.index]
@@ -274,11 +287,15 @@ with forecast_tab:
     st.dataframe(stress_table(data["stress"]), hide_index=True, width="stretch",
                  column_config={name: st.column_config.NumberColumn(format="%.1f%%")
                                 for name in [CURRENT, "12-month average", BEST]})
-    st.caption("The harder worlds were fixed before seeing any results. The calendar regression beat "
-               "both averages in all 18 runs. Where demand persists or a seasonal pattern has no "
-               "calendar flag, methods that also read recent history edge ahead by up to about 1 point. "
-               "What matters most is using the business calendar. On these fresh worlds the "
-               "regression's 80% ranges caught only 73–76% of actual orders, so they are slightly too narrow.")
+    st.caption("The harder worlds were fixed before seeing any results. Round 1 (S1–S5) makes the data "
+               "messier in general; round 2 (S6–S10) adds patterns specific to Lives Group. The calendar "
+               "regression beat today's 6-month average in 32 of 33 runs (it lost one by 0.3 points). "
+               "In most worlds the best method is less than 1 point ahead of it, so the top methods are "
+               "effectively tied: what matters most is using the business calendar. The exception is "
+               "S10, where the pre-trained Chronos-2 model copes 1.5 points better with enquiries mixed "
+               "into the history; keeping enquiries out of the order data matters more. The regression's "
+               "80% ranges caught 67–82% of actual orders (about 75% on average), so they are slightly "
+               "too narrow.")
 
     st.markdown("**Next 3 months, calendar regression with an 80% range**")
     st.dataframe(next_quarter(series, data["forecasts"]), hide_index=True, width="stretch",
