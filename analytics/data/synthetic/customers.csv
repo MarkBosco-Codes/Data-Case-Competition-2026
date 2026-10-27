@@ -1,0 +1,57 @@
+card_code,card_name,country,customer_type,requested_by
+C10001,Harbourview General Hospital,Singapore,Hospital,SPD
+C10002,Kingsway University Hospital,Singapore,Hospital,SPD
+C10003,Silverbrook Hospital,Singapore,Hospital,SPD
+C10004,Orchid Medical Centre,Singapore,Medical Centre,SPD
+C10005,Evergreen Medical Centre,Singapore,Medical Centre,SPD
+C10006,Lionsgate Diagnostics Laboratory,Singapore,Laboratory,SPD
+C10007,Straits Pathology Laboratory,Singapore,Laboratory,SPD
+C10008,Bayfront Specialist Clinic,Singapore,Clinic,SPD
+C10009,Northpoint Family Clinic,Singapore,Clinic,SPD
+C10010,Tanjong Heights Clinic,Singapore,Clinic,SPD
+C10011,Seri Permata General Hospital,Malaysia,Hospital,SPD
+C10012,Bukit Indah University Hospital,Malaysia,Hospital,SPD
+C10013,Sinar Hospital,Malaysia,Hospital,SPD
+C10014,Cempaka Medical Centre,Malaysia,Medical Centre,SPD
+C10015,Mutiara Medical Centre,Malaysia,Medical Centre,SPD
+C10016,Selatan Diagnostics Laboratory,Malaysia,Laboratory,SPD
+C10017,Kenanga Pathology Laboratory,Malaysia,Laboratory,SPD
+C10018,Harmoni Specialist Clinic,Malaysia,Clinic,SPD
+C10019,Damai Family Clinic,Malaysia,Clinic,SPD
+C10020,Taman Sejahtera Clinic,Malaysia,Clinic,SPD
+C10021,Rattana General Hospital,Thailand,Hospital,SPD
+C10022,Saeng Tham University Hospital,Thailand,Hospital,SPD
+C10023,Rimnam Hospital,Thailand,Hospital,SPD
+C10024,Lotus Medical Centre,Thailand,Medical Centre,SPD
+C10025,Mali Medical Centre,Thailand,Medical Centre,SPD
+C10026,Naga Diagnostics Laboratory,Thailand,Laboratory,SPD
+C10027,Thong Pathology Laboratory,Thailand,Laboratory,SPD
+C10028,Sukjai Specialist Clinic,Thailand,Clinic,SPD
+C10029,Baan Suk Family Clinic,Thailand,Clinic,SPD
+C10030,Pattana Clinic,Thailand,Clinic,SPD
+C10031,Cahaya Harapan General Hospital,Indonesia,Hospital,SPD
+C10032,Nusantara University Hospital,Indonesia,Hospital,SPD
+C10033,Bintang Hospital,Indonesia,Hospital,SPD
+C10034,Melati Medical Centre,Indonesia,Medical Centre,SPD
+C10035,Pelita Medical Centre,Indonesia,Medical Centre,SPD
+C10036,Garuda Diagnostics Laboratory,Indonesia,Laboratory,SPD
+C10037,Kartika Pathology Laboratory,Indonesia,Laboratory,SPD
+C10038,Sehat Specialist Clinic,Indonesia,Clinic,SPD
+C10039,Bunga Family Clinic,Indonesia,Clinic,SPD
+C10040,Merdeka Clinic,Indonesia,Clinic,SPD
+C10041,Hoa Mai General Hospital,Vietnam,Hospital,SPD
+C10042,Truong Son University Hospital,Vietnam,Hospital,SPD
+C10043,Hai Dang Hospital,Vietnam,Hospital,SPD
+C10044,Binh Minh Medical Centre,Vietnam,Medical Centre,SPD
+C10045,Ha Thanh Medical Centre,Vietnam,Medical Centre,SPD
+C10046,Sao Viet Diagnostics Laboratory,Vietnam,Laboratory,SPD
+C10047,Kim Long Pathology Laboratory,Vietnam,Laboratory,SPD
+C10048,Thanh Tam Specialist Clinic,Vietnam,Clinic,SPD
+C10049,Phuc An Family Clinic,Vietnam,Clinic,SPD
+C10050,Tuong Lai Clinic,Vietnam,Clinic,SPD
+C10051,Garuda Diag. Lab,Indonesia,Laboratory,QTG
+C10052,"NAGA DIAGNOSTICS LABORATORY CO., LTD.",Thailand,Laboratory,QTG
+C10053,KLPL,Vietnam,Laboratory,QTG
+C10054,Selatan Diag. Lab,Malaysia,Laboratory,QTG
+C10055,"HAI DANG HOSPITAL CO., LTD.",Vietnam,Hospital,QTS
+C10056,KPL,Malaysia,Laboratory,QTG

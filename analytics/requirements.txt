@@ -1,0 +1,6 @@
+numpy>=2.0
+pandas>=2.2
+statsmodels>=0.14
+scikit-learn>=1.5
+streamlit>=1.40
+chronos-forecasting>=2.3  # only needed to rerun the backtest; pulls in PyTorch
