@@ -1,0 +1,199 @@
+scenario,seed,model,MAE A (units),MAE B (units),MAE C (units),MAPE %,Beats 12-mo avg (of 15),80% range coverage %
+S0 Baseline,101,Ridge: country holidays,192.9,9.6,68.0,14.73,9,70.2
+S0 Baseline,101,Ensemble (average of 4),206.6,9.4,74.9,14.95,10,75.6
+S0 Baseline,101,SARIMAX with calendar,224.5,9.5,73.7,15.07,8,73.3
+S0 Baseline,101,Calendar regression,194.4,9.8,69.3,15.1,9,74.7
+S0 Baseline,101,Chronos-2 + calendar,247.0,12.1,68.9,15.4,8,78.7
+S0 Baseline,101,Gradient boosting,222.2,10.3,74.5,15.51,9,78.7
+S0 Baseline,101,12-month average,236.9,12.1,68.4,16.28,0,69.3
+S0 Baseline,101,Chronos-2 (pre-trained),256.7,13.5,69.2,16.62,5,76.9
+S0 Baseline,101,Same month last year,278.8,12.7,87.4,17.8,4,79.1
+S0 Baseline,101,Holt-Winters,251.9,12.0,94.2,18.33,4,82.2
+S0 Baseline,101,6-month average (current method),252.3,13.9,70.2,18.44,3,68.9
+S0 Baseline,202,Chronos-2 + calendar,248.7,11.3,68.4,16.34,11,72.4
+S0 Baseline,202,Calendar regression,217.0,12.0,64.6,16.6,15,69.8
+S0 Baseline,202,Ridge: country holidays,212.0,12.3,64.6,16.65,15,67.6
+S0 Baseline,202,SARIMAX with calendar,246.5,11.3,71.3,17.12,9,70.2
+S0 Baseline,202,Ensemble (average of 4),237.8,11.3,70.1,17.24,12,68.4
+S0 Baseline,202,Chronos-2 (pre-trained),249.9,13.7,69.1,17.32,8,75.6
+S0 Baseline,202,12-month average,249.7,15.1,71.1,19.28,0,68.0
+S0 Baseline,202,Gradient boosting,264.0,13.8,77.9,19.31,8,67.1
+S0 Baseline,202,Holt-Winters,293.1,13.9,88.5,21.08,5,74.7
+S0 Baseline,202,6-month average (current method),272.1,18.5,68.1,21.16,5,65.3
+S0 Baseline,202,Same month last year,309.7,15.0,99.5,21.89,2,77.8
+S0 Baseline,303,SARIMAX with calendar,176.7,9.0,45.6,12.83,12,77.3
+S0 Baseline,303,Calendar regression,160.1,9.4,46.5,13.11,12,82.7
+S0 Baseline,303,Ensemble (average of 4),169.8,9.9,44.9,13.23,12,83.1
+S0 Baseline,303,Ridge: country holidays,164.7,9.6,46.5,13.26,11,83.6
+S0 Baseline,303,Chronos-2 + calendar,193.2,10.5,49.2,13.64,9,82.2
+S0 Baseline,303,Gradient boosting,168.6,11.5,43.4,14.03,11,79.6
+S0 Baseline,303,Chronos-2 (pre-trained),203.2,11.2,51.5,14.73,6,84.9
+S0 Baseline,303,12-month average,196.4,11.6,49.1,14.73,0,83.1
+S0 Baseline,303,Same month last year,240.3,11.2,58.5,16.3,5,86.2
+S0 Baseline,303,Holt-Winters,214.2,12.3,56.4,16.46,4,85.8
+S0 Baseline,303,6-month average (current method),233.6,13.2,51.6,16.72,2,73.8
+S1 Persistent demand,101,Ensemble (average of 4),192.2,8.1,61.3,12.84,11,58.2
+S1 Persistent demand,101,SARIMAX with calendar,190.1,8.6,59.2,13.1,12,64.4
+S1 Persistent demand,101,Ridge: country holidays,185.7,8.4,71.0,13.19,10,53.3
+S1 Persistent demand,101,Calendar regression,186.1,8.4,70.6,13.24,10,53.3
+S1 Persistent demand,101,Chronos-2 + calendar,230.5,10.5,59.1,13.8,9,70.2
+S1 Persistent demand,101,Gradient boosting,200.7,9.9,67.3,14.08,9,64.0
+S1 Persistent demand,101,Chronos-2 (pre-trained),234.0,12.1,55.9,14.95,8,75.6
+S1 Persistent demand,101,12-month average,233.3,11.3,66.7,15.05,0,69.8
+S1 Persistent demand,101,Holt-Winters,261.5,9.5,69.8,15.8,6,71.6
+S1 Persistent demand,101,6-month average (current method),229.9,13.1,59.4,15.84,7,73.3
+S1 Persistent demand,101,Same month last year,289.8,10.6,107.0,17.41,5,78.7
+S1 Persistent demand,202,Chronos-2 + calendar,232.9,12.0,62.8,16.12,10,80.9
+S1 Persistent demand,202,Chronos-2 (pre-trained),222.6,13.1,61.6,16.49,11,82.2
+S1 Persistent demand,202,SARIMAX with calendar,251.0,11.7,68.8,16.92,10,82.7
+S1 Persistent demand,202,Ensemble (average of 4),265.1,12.1,75.1,18.3,9,80.9
+S1 Persistent demand,202,Calendar regression,265.8,12.2,74.9,18.78,11,76.9
+S1 Persistent demand,202,Ridge: country holidays,261.8,12.2,78.1,18.96,8,76.0
+S1 Persistent demand,202,6-month average (current method),241.3,14.6,70.7,19.03,8,76.4
+S1 Persistent demand,202,12-month average,268.7,14.1,76.0,19.84,0,78.2
+S1 Persistent demand,202,Holt-Winters,318.4,13.7,83.7,20.28,4,80.9
+S1 Persistent demand,202,Gradient boosting,313.1,14.7,90.8,22.23,6,84.0
+S1 Persistent demand,202,Same month last year,335.9,15.2,95.8,23.14,2,71.1
+S1 Persistent demand,303,Chronos-2 + calendar,182.5,10.6,49.4,13.83,10,73.8
+S1 Persistent demand,303,Ridge: country holidays,175.8,10.6,45.5,13.86,12,68.4
+S1 Persistent demand,303,Calendar regression,179.1,10.3,44.9,13.99,13,72.0
+S1 Persistent demand,303,Ensemble (average of 4),167.9,9.9,53.3,14.04,11,77.8
+S1 Persistent demand,303,SARIMAX with calendar,161.4,10.1,58.3,14.18,10,77.8
+S1 Persistent demand,303,Chronos-2 (pre-trained),193.9,12.1,47.9,15.09,8,77.8
+S1 Persistent demand,303,12-month average,214.3,13.2,45.3,15.7,0,75.1
+S1 Persistent demand,303,Holt-Winters,196.3,10.4,74.6,16.56,8,82.7
+S1 Persistent demand,303,Same month last year,219.8,12.1,62.5,16.84,6,78.2
+S1 Persistent demand,303,Gradient boosting,196.3,13.0,62.5,16.89,7,78.2
+S1 Persistent demand,303,6-month average (current method),225.5,14.2,50.1,17.32,4,72.9
+S2 Changing calendar,101,Ridge: country holidays,221.3,12.1,55.2,16.09,15,69.8
+S2 Changing calendar,101,Calendar regression,224.5,12.0,57.5,16.3,13,68.9
+S2 Changing calendar,101,SARIMAX with calendar,258.4,13.8,58.1,17.2,10,76.4
+S2 Changing calendar,101,Ensemble (average of 4),239.3,13.5,64.6,17.58,11,74.7
+S2 Changing calendar,101,Chronos-2 + calendar,309.3,16.6,64.2,18.1,3,73.8
+S2 Changing calendar,101,Gradient boosting,247.1,14.9,64.7,18.36,9,73.3
+S2 Changing calendar,101,Chronos-2 (pre-trained),316.4,17.3,62.3,18.85,4,78.7
+S2 Changing calendar,101,12-month average,282.5,16.4,59.3,18.85,0,75.6
+S2 Changing calendar,101,6-month average (current method),297.2,17.5,67.8,20.44,4,74.2
+S2 Changing calendar,101,Same month last year,335.1,15.3,86.6,21.11,5,67.1
+S2 Changing calendar,101,Holt-Winters,281.2,15.7,90.4,21.59,5,76.0
+S2 Changing calendar,202,SARIMAX with calendar,251.6,12.1,66.8,16.32,11,63.6
+S2 Changing calendar,202,Ridge: country holidays,217.5,12.4,67.4,16.38,14,68.0
+S2 Changing calendar,202,Calendar regression,215.9,12.4,69.0,16.52,14,66.2
+S2 Changing calendar,202,Chronos-2 + calendar,246.0,14.1,73.1,16.98,9,75.6
+S2 Changing calendar,202,Ensemble (average of 4),233.4,13.9,67.7,17.29,12,72.0
+S2 Changing calendar,202,Gradient boosting,249.3,16.2,66.3,18.54,11,69.8
+S2 Changing calendar,202,Chronos-2 (pre-trained),255.2,16.6,73.2,18.61,7,79.1
+S2 Changing calendar,202,12-month average,260.2,16.7,73.7,19.6,0,69.8
+S2 Changing calendar,202,Same month last year,315.9,15.0,95.6,21.17,4,74.2
+S2 Changing calendar,202,Holt-Winters,288.8,17.5,83.0,21.64,5,85.8
+S2 Changing calendar,202,6-month average (current method),279.0,20.9,69.9,22.05,5,75.6
+S2 Changing calendar,303,Ridge: country holidays,177.0,11.5,45.9,14.23,11,66.7
+S2 Changing calendar,303,Calendar regression,176.3,11.4,46.8,14.42,11,67.6
+S2 Changing calendar,303,Chronos-2 + calendar,201.4,12.5,49.5,15.05,8,83.1
+S2 Changing calendar,303,SARIMAX with calendar,201.0,11.8,49.7,15.1,8,75.1
+S2 Changing calendar,303,Ensemble (average of 4),185.3,12.1,49.2,15.33,9,76.0
+S2 Changing calendar,303,Gradient boosting,199.0,12.2,49.4,15.63,9,74.7
+S2 Changing calendar,303,12-month average,187.9,14.0,49.2,16.08,0,82.7
+S2 Changing calendar,303,Chronos-2 (pre-trained),212.4,14.3,51.5,16.57,4,85.3
+S2 Changing calendar,303,Same month last year,234.5,13.5,57.7,17.89,4,72.4
+S2 Changing calendar,303,6-month average (current method),214.5,15.5,51.9,17.91,3,78.7
+S2 Changing calendar,303,Holt-Winters,214.9,15.4,58.1,19.04,2,75.6
+S3 Unknown seasonality,101,Chronos-2 + calendar,252.5,10.9,69.4,15.23,14,76.4
+S3 Unknown seasonality,101,Ensemble (average of 4),209.4,10.0,73.5,15.92,11,76.9
+S3 Unknown seasonality,101,Calendar regression,232.3,10.1,74.9,16.61,11,72.4
+S3 Unknown seasonality,101,Ridge: country holidays,235.6,10.2,75.0,16.63,11,72.0
+S3 Unknown seasonality,101,Gradient boosting,227.5,11.0,74.2,16.71,12,73.8
+S3 Unknown seasonality,101,Holt-Winters,234.2,11.0,82.7,17.18,9,81.8
+S3 Unknown seasonality,101,Chronos-2 (pre-trained),267.5,13.0,73.2,17.27,9,79.1
+S3 Unknown seasonality,101,SARIMAX with calendar,255.1,11.5,76.6,17.97,6,76.4
+S3 Unknown seasonality,101,12-month average,292.2,12.4,76.6,18.45,0,72.4
+S3 Unknown seasonality,101,Same month last year,283.5,12.8,89.7,18.9,7,77.8
+S3 Unknown seasonality,101,6-month average (current method),359.7,13.6,82.3,21.06,2,68.0
+S3 Unknown seasonality,202,Ensemble (average of 4),253.9,12.8,67.5,16.69,13,77.3
+S3 Unknown seasonality,202,SARIMAX with calendar,253.6,12.6,75.3,16.88,11,78.7
+S3 Unknown seasonality,202,Gradient boosting,272.4,13.5,67.3,17.24,11,71.6
+S3 Unknown seasonality,202,Chronos-2 + calendar,274.5,14.0,75.0,17.42,9,78.2
+S3 Unknown seasonality,202,Calendar regression,274.6,13.1,68.5,17.55,14,72.0
+S3 Unknown seasonality,202,Ridge: country holidays,264.2,13.6,66.7,17.55,14,71.1
+S3 Unknown seasonality,202,Chronos-2 (pre-trained),291.4,15.7,74.0,18.6,5,79.6
+S3 Unknown seasonality,202,Same month last year,307.2,15.2,72.2,18.76,8,72.0
+S3 Unknown seasonality,202,Holt-Winters,289.7,15.3,74.4,19.12,8,78.7
+S3 Unknown seasonality,202,12-month average,301.1,15.7,70.6,19.45,0,76.0
+S3 Unknown seasonality,202,6-month average (current method),324.0,17.6,80.4,22.0,2,82.2
+S3 Unknown seasonality,303,Ensemble (average of 4),191.7,10.3,51.9,13.94,11,79.1
+S3 Unknown seasonality,303,Chronos-2 + calendar,234.6,9.9,56.0,14.31,9,82.2
+S3 Unknown seasonality,303,Gradient boosting,215.8,10.5,51.3,14.55,11,76.0
+S3 Unknown seasonality,303,Calendar regression,231.5,10.8,53.0,15.26,9,70.2
+S3 Unknown seasonality,303,Ridge: country holidays,225.4,11.2,52.8,15.29,9,68.4
+S3 Unknown seasonality,303,SARIMAX with calendar,241.8,11.7,52.5,15.53,6,83.6
+S3 Unknown seasonality,303,12-month average,231.4,12.1,52.3,15.71,0,73.8
+S3 Unknown seasonality,303,Chronos-2 (pre-trained),248.8,11.7,56.9,16.0,5,83.6
+S3 Unknown seasonality,303,Holt-Winters,213.7,11.5,63.1,16.46,5,79.6
+S3 Unknown seasonality,303,Same month last year,257.1,13.8,65.9,18.22,3,86.7
+S3 Unknown seasonality,303,6-month average (current method),284.8,14.8,58.0,19.67,1,79.1
+S4 Shocks and breaks,101,Ridge: country holidays,231.5,9.2,69.4,14.93,9,67.1
+S4 Shocks and breaks,101,SARIMAX with calendar,252.2,9.9,73.7,15.17,8,74.2
+S4 Shocks and breaks,101,Chronos-2 + calendar,283.8,12.2,68.8,15.22,8,72.0
+S4 Shocks and breaks,101,Calendar regression,232.4,9.7,71.1,15.42,8,71.1
+S4 Shocks and breaks,101,Ensemble (average of 4),243.1,9.8,77.0,15.43,8,69.8
+S4 Shocks and breaks,101,12-month average,261.9,12.1,70.4,16.25,0,72.4
+S4 Shocks and breaks,101,Gradient boosting,262.2,10.7,78.6,16.29,8,76.0
+S4 Shocks and breaks,101,Chronos-2 (pre-trained),276.6,13.6,69.4,16.4,6,76.9
+S4 Shocks and breaks,101,6-month average (current method),280.3,14.8,70.8,18.86,4,71.1
+S4 Shocks and breaks,101,Same month last year,351.8,12.7,96.3,18.96,3,77.3
+S4 Shocks and breaks,101,Holt-Winters,323.8,12.9,99.4,19.64,2,76.4
+S4 Shocks and breaks,202,Chronos-2 + calendar,288.0,11.7,77.5,16.96,11,78.2
+S4 Shocks and breaks,202,Calendar regression,282.2,11.9,74.3,17.56,14,73.3
+S4 Shocks and breaks,202,Ridge: country holidays,280.5,12.2,75.5,17.8,14,72.9
+S4 Shocks and breaks,202,Chronos-2 (pre-trained),295.7,13.9,76.4,17.86,8,84.0
+S4 Shocks and breaks,202,SARIMAX with calendar,288.7,11.8,79.7,17.91,10,78.7
+S4 Shocks and breaks,202,Ensemble (average of 4),295.6,11.7,76.4,18.1,11,75.1
+S4 Shocks and breaks,202,Gradient boosting,317.1,13.8,78.1,19.51,8,72.9
+S4 Shocks and breaks,202,12-month average,315.6,14.8,78.6,19.77,0,77.3
+S4 Shocks and breaks,202,6-month average (current method),305.7,18.2,77.0,21.27,7,76.0
+S4 Shocks and breaks,202,Holt-Winters,353.7,14.3,92.1,21.78,6,74.2
+S4 Shocks and breaks,202,Same month last year,393.4,16.0,108.5,23.45,1,71.6
+S4 Shocks and breaks,303,Calendar regression,205.3,10.6,45.7,13.52,12,78.7
+S4 Shocks and breaks,303,Ridge: country holidays,220.4,10.8,47.0,13.87,12,83.6
+S4 Shocks and breaks,303,Ensemble (average of 4),240.5,10.7,46.6,13.88,13,78.7
+S4 Shocks and breaks,303,SARIMAX with calendar,261.0,10.1,51.6,14.16,11,74.2
+S4 Shocks and breaks,303,Chronos-2 + calendar,229.2,12.9,51.2,14.27,8,80.0
+S4 Shocks and breaks,303,Gradient boosting,221.5,12.3,48.0,14.53,12,81.3
+S4 Shocks and breaks,303,12-month average,236.1,12.8,51.2,14.93,0,86.2
+S4 Shocks and breaks,303,Chronos-2 (pre-trained),239.0,13.3,51.6,15.06,5,83.6
+S4 Shocks and breaks,303,6-month average (current method),252.0,14.8,55.3,16.98,3,77.8
+S4 Shocks and breaks,303,Holt-Winters,329.6,12.5,61.9,17.53,6,84.0
+S4 Shocks and breaks,303,Same month last year,327.6,13.0,71.8,17.9,4,88.0
+S5 Messy world,101,Chronos-2 + calendar,265.1,15.7,60.7,17.28,9,81.3
+S5 Messy world,101,Ridge: country holidays,285.8,12.7,53.9,17.6,13,73.8
+S5 Messy world,101,Ensemble (average of 4),273.4,12.6,60.2,17.67,11,71.6
+S5 Messy world,101,Calendar regression,296.2,12.2,56.8,18.0,14,76.0
+S5 Messy world,101,SARIMAX with calendar,307.9,13.1,64.1,18.46,12,69.3
+S5 Messy world,101,Holt-Winters,287.3,13.3,65.0,18.74,8,79.6
+S5 Messy world,101,Same month last year,349.1,14.3,82.7,19.21,6,77.3
+S5 Messy world,101,Chronos-2 (pre-trained),307.5,17.3,61.4,19.35,6,79.1
+S5 Messy world,101,12-month average,359.7,17.0,60.5,20.72,0,72.0
+S5 Messy world,101,Gradient boosting,326.0,17.8,81.7,21.42,8,58.7
+S5 Messy world,101,6-month average (current method),427.7,18.9,70.4,24.45,1,66.7
+S5 Messy world,202,SARIMAX with calendar,282.6,15.0,85.3,18.8,11,89.8
+S5 Messy world,202,Chronos-2 + calendar,286.4,16.3,91.8,19.26,10,90.2
+S5 Messy world,202,Ensemble (average of 4),301.0,15.5,89.4,20.3,12,90.7
+S5 Messy world,202,Chronos-2 (pre-trained),316.2,18.1,89.0,20.67,11,92.0
+S5 Messy world,202,Calendar regression,343.9,14.2,95.2,20.7,8,85.8
+S5 Messy world,202,Ridge: country holidays,344.1,14.9,97.5,21.46,8,88.0
+S5 Messy world,202,12-month average,371.4,18.0,95.8,22.75,0,85.8
+S5 Messy world,202,Same month last year,381.0,16.3,112.7,23.06,7,72.4
+S5 Messy world,202,Gradient boosting,382.8,18.4,100.5,23.94,6,81.3
+S5 Messy world,202,6-month average (current method),421.9,19.8,101.5,24.82,5,87.6
+S5 Messy world,202,Holt-Winters,315.6,18.9,113.5,24.84,8,84.4
+S5 Messy world,303,Ensemble (average of 4),182.7,11.5,57.1,16.16,12,78.2
+S5 Messy world,303,Calendar regression,233.6,11.4,53.5,16.62,13,81.8
+S5 Messy world,303,Ridge: country holidays,229.9,11.4,55.1,16.74,11,81.3
+S5 Messy world,303,Gradient boosting,181.8,12.9,61.9,17.1,8,72.9
+S5 Messy world,303,SARIMAX with calendar,221.6,13.7,53.7,17.41,10,84.0
+S5 Messy world,303,Chronos-2 + calendar,218.2,15.3,59.9,17.97,9,84.0
+S5 Messy world,303,12-month average,240.2,15.3,56.7,18.23,0,87.1
+S5 Messy world,303,Chronos-2 (pre-trained),248.2,16.5,60.5,19.47,4,86.2
+S5 Messy world,303,Same month last year,272.6,12.6,80.7,19.64,5,72.9
+S5 Messy world,303,Holt-Winters,256.6,13.4,76.5,21.15,5,66.7
+S5 Messy world,303,6-month average (current method),286.6,20.2,57.7,22.82,4,90.2

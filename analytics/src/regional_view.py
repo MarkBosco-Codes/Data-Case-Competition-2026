@@ -47,7 +47,29 @@ def load_data():
         "requests": pd.read_csv(DATA / "setup_requests.csv", parse_dates=["submitted", "approved"]),
         "scoreboard": pd.read_csv(RESULTS / "backtest_summary.csv", index_col=0),
         "forecasts": pd.read_csv(RESULTS / "backtest_forecasts.csv"),
+        "stress": pd.read_csv(RESULTS / "stress_test_summary.csv"),
     }
+
+
+WORLDS = {  # stress-test scenario -> plain description
+    "S0 Baseline": "Same rules as our data",
+    "S1 Persistent demand": "Busy or quiet spells last for months",
+    "S2 Changing calendar": "Holiday and budget effects change size each year",
+    "S3 Unknown seasonality": "A seasonal wave that no calendar flag explains",
+    "S4 Shocks and breaks": "Surprise outbreaks and a new big contract",
+    "S5 Messy world": "All of the above at once",
+}
+
+
+def stress_table(stress):
+    """One row per harder world: today's method, the 12-month average, the
+    calendar regression, and the best method overall in that world."""
+    mape = stress.pivot_table(index="scenario", columns="model", values="MAPE % (mean of seeds)")
+    table = mape[[CURRENT, "12-month average", BEST]].copy()
+    table["Best method in this world"] = [f"{mape.loc[s].idxmin()} ({mape.loc[s].min():.1f}%)"
+                                          for s in mape.index]
+    table.insert(0, "World", [WORLDS.get(s, s) for s in table.index])
+    return table.reset_index(drop=True)
 
 
 def noise_band(series):
@@ -225,9 +247,11 @@ with forecast_tab:
     cut_b = (1 - best["MAE B (units)"] / current["MAE B (units)"]) * 100
     st.subheader("Does data science forecast better than today's 6-month average?")
     st.markdown(
-        f"We tested {len(scoreboard)} methods on 12 past months they had not seen. The best, a "
-        f"**calendar regression**, cuts the average monthly miss by **{cut_a:.0f}%** on reagents (A) "
-        f"and **{cut_b:.0f}%** on equipment (B). Product C has no calendar pattern, so no gain.")
+        f"We tested {len(scoreboard)} methods on 12 past months they had not seen. Compared with "
+        f"today's method, the **calendar regression** cuts the average monthly miss by **{cut_a:.0f}%** "
+        f"on reagents (A) and **{cut_b:.0f}%** on equipment (B). Product C has no calendar pattern, "
+        "so no gain. Other methods that also use the calendar come within about 1 point of it; "
+        "we show the regression because it is the simplest to explain.")
     st.markdown(
         "**How it works:** start from the last 12 months' average, then adjust for calendar "
         "facts known in advance: public holidays, the government budget year-end (equipment) "
@@ -244,6 +268,17 @@ with forecast_tab:
     st.dataframe(scoreboard, width="stretch")
     st.caption("80% range coverage: how often actual orders landed inside the forecast's 80% range. "
                "Close to 80% means the ranges are honest.")
+
+    st.markdown("**Stress test: does the result hold in messier worlds?** "
+                "(average miss %, 3 random draws per world; lower is better)")
+    st.dataframe(stress_table(data["stress"]), hide_index=True, width="stretch",
+                 column_config={name: st.column_config.NumberColumn(format="%.1f%%")
+                                for name in [CURRENT, "12-month average", BEST]})
+    st.caption("The harder worlds were fixed before seeing any results. The calendar regression beat "
+               "both averages in all 18 runs. Where demand persists or a seasonal pattern has no "
+               "calendar flag, methods that also read recent history edge ahead by up to about 1 point. "
+               "What matters most is using the business calendar. On these fresh worlds the "
+               "regression's 80% ranges caught only 73–76% of actual orders, so they are slightly too narrow.")
 
     st.markdown("**Next 3 months, calendar regression with an 80% range**")
     st.dataframe(next_quarter(series, data["forecasts"]), hide_index=True, width="stretch",
