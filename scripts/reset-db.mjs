@@ -1,8 +1,8 @@
 // Reset the DataGent database to a clean state:
-// keeps user accounts (users) and approver permissions (requester_approvers),
+// keeps user accounts (users), approver permissions (requester_approvers),
+// master data (bonus_fields), and processed emails log (processed_emails).
 // removes every request and its artifacts (approvals, audit, emails, bonus
-// values, business partners, bank accounts, products, orders, magic links)
-// plus ingestion state so old agent-inbox emails are not re-ingested.
+// values, business partners, bank accounts, products, orders, magic links, api_requests).
 import Database from 'better-sqlite3'
 import path from 'node:path'
 import process from 'node:process'
@@ -22,13 +22,14 @@ const WIPE = [
   'products',
   'orders',
   'request_links',
-  'processed_emails',
+  'api_requests',
 ]
 
 const KEEP = [
   'users', // user accounts + roles (synced from users.yaml)
   'requester_approvers', // approver <-> requester permission links
   'bonus_fields', // configured bonus-field subclasses (master data, not requests)
+  'processed_emails', // log of emails processed (retained)
   'sync_state', // cleared of request-specific keys below
 ]
 
@@ -62,8 +63,9 @@ const kept = db
   .map((r) => r.name)
 const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n
 const linkCount = db.prepare('SELECT COUNT(*) AS n FROM requester_approvers').get().n
+const emailCount = db.prepare('SELECT COUNT(*) AS n FROM processed_emails').get().n
 console.log(`kept tables: ${kept.join(', ')}`)
-console.log(`users retained: ${userCount}, approver links retained: ${linkCount}`)
+console.log(`users retained: ${userCount}, approver links retained: ${linkCount}, processed emails retained: ${emailCount}`)
 console.log('Database reset to a clean state.')
 
 db.close()

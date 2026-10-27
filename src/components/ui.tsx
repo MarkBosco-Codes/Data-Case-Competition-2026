@@ -136,6 +136,7 @@ export const tableStyles = {
 
 export const statusColors: Record<string, string> = {
   NEW: T.navy,
+  IN_PROGRESS: '#d97706',
   PENDING_APPROVAL: '#b26a00',
   APPROVED: '#147a3d',
   CREATED_IN_MDM: '#147a3d',
@@ -145,6 +146,7 @@ export const statusColors: Record<string, string> = {
 
 export const statusLabel: Record<string, string> = {
   NEW: 'New',
+  IN_PROGRESS: 'In progress',
   PENDING_APPROVAL: 'Pending approval',
   APPROVED: 'Approved',
   CREATED_IN_MDM: 'Approved & applied to MDM',

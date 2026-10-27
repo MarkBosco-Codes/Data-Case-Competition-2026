@@ -64,14 +64,62 @@ export function isValidTaxFormat(country: string, taxId: string): boolean {
   }
 }
 
+export function levenshteinDistance(a: string, b: string): number {
+  const m = a.length
+  const n = b.length
+  if (m === 0) return n
+  if (n === 0) return m
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0))
+  for (let i = 0; i <= m; i++) dp[i][0] = i
+  for (let j = 0; j <= n; j++) dp[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost,
+      )
+    }
+  }
+  return dp[m][n]
+}
+
+function cleanNameForDedupe(str: string): string {
+  let s = String(str ?? '')
+    .replace(/\([^)]*\)/g, ' ')
+    .toLowerCase()
+  s = s
+    .replace(/\bcompany\b/g, 'co')
+    .replace(/\bcorporation\b/g, 'corp')
+    .replace(/\blimited\b/g, 'ltd')
+    .replace(/\bincorporated\b/g, 'inc')
+    .replace(/[^a-z0-9]/g, '')
+  return s
+}
+
+function isNameSimilar(nameA: string, nameB: string): boolean {
+  const cleanA = cleanNameForDedupe(nameA)
+  const cleanB = cleanNameForDedupe(nameB)
+  if (!cleanA || !cleanB) return false
+  if (cleanA === cleanB) return true
+  const dist = levenshteinDistance(cleanA, cleanB)
+  const maxLen = Math.max(cleanA.length, cleanB.length)
+  const minLen = Math.min(cleanA.length, cleanB.length)
+  if (dist <= 2 && minLen >= 4) return true
+  if (dist / maxLen <= 0.25) return true
+  return false
+}
+
 /** Front-office dedupe: duplicate detection on name + country + partnerClass. */
 export function findDuplicate(existing: BusinessPartner[], incoming: Schema) {
+  const incName = String(incoming?.name ?? '').trim()
+  if (!incName) return undefined
   return existing.find(
     (p) =>
-      p.partnerClass === incoming.partnerClass &&
-      p.country === incoming.country &&
-      p.name.replace(/\s+/g, '').toLowerCase() ===
-        incoming.name.replace(/\s+/g, '').toLowerCase(),
+      p?.partnerClass === incoming?.partnerClass &&
+      p?.country === incoming?.country &&
+      isNameSimilar(p?.name ?? '', incName),
   )
 }
 
@@ -137,8 +185,8 @@ export interface BonusField {
 }
 
 /** Tokenize the free text into candidate attribute names. */
-function candidateNames(text: string): string[] {
-  const words = text
+function candidateNames(text: string | null | undefined): string[] {
+  const words = String(text ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
@@ -167,15 +215,17 @@ const STOPWORDS = new Set([
  */
 export function matchBonusField(
   fields: BonusField[],
-  text: string,
+  text: string | null | undefined,
 ): BonusField | null {
+  if (!text || !fields?.length) return null
   const candidates = new Set(candidateNames(text))
   let best: BonusField | null = null
   let bestScore = 0
   for (const f of fields) {
+    if (!f?.name) continue
     const labels = new Set<string>([
-      f.name.toLowerCase(),
-      ...candidateNames(f.name.replace(/([A-Z])/g, ' $1')),
+      String(f.name).toLowerCase(),
+      ...candidateNames(String(f.name).replace(/([A-Z])/g, ' $1')),
     ])
     let score = 0
     for (const c of candidates) if (labels.has(c)) score++
@@ -188,8 +238,9 @@ export function matchBonusField(
 }
 
 /** Derive a camelCase attribute name for a brand-new bonus subclass. */
-export function deriveBonusName(text: string): string | null {
-  const words = text
+export function deriveBonusName(text: string | null | undefined): string | null {
+  if (!text) return null
+  const words = String(text ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)

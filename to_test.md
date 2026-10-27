@@ -11,14 +11,17 @@ Name: Vietnam Trading Co (Công ty Thương mại Việt Nam)
 Partner class: Customer
 Country: Vietnam
 Country of origin: Vietnam
-Bank account: VN1234567890
 Contact name: Nguyen Van A
 Contact email: contact@vietnamtrading.vn
 Contact phone: +84 90 123 4567
 Address: 10 Nguyen Hue, District 1, Ho Chi Minh City
 Request reason: Onboarding new customer for Q2 sales
 ```
-Expected: BP request created (PENDING_APPROVAL); requester reply contains track link; approver email subject "Approval needed: New Customer Vietnam Trading Co (Công ty Thương mại Việt Nam)"; approver email contains one combined link with approve perms; `/r/<id>/<secret>` shows "Signed in as ... (requestor email), view-only", no Approve button; Details show contactName/contactEmail/contactPhone.
+Expected:
+- BP request created with status `IN_PROGRESS` (bank account & credit terms are not in email).
+- Requester receives track link to request page.
+- Opening track link shows request form for Bank Account Number & Credit Terms dropdown (with explanations).
+- Clicking "Submit request" sets status to `PENDING_APPROVAL`, sets `QualityApproved = N/A` & `RegulatoryApproved = N/A` (or `PENDING`), and sends notification emails to approvers.
 
 ## 2. Business Partner — missing reason (request reason)
 Subject: New supplier Hanoi Electronics
@@ -39,7 +42,7 @@ Body:
 New customer Saigon Logistics from Vietnam.
 Request reason: expand into Vietnamese market
 ```
-Expected: no request; reply lists missing fields (bank account, contact name, contact email, contact phone, address, country); outcome MISSING_DETAILS.
+Expected: no request; reply lists missing fields (contact name, contact email, contact phone, address, country); outcome MISSING_DETAILS. Note: Bank Account and Credit Terms are not required in email.
 
 ## 3b. Follow-up completing missing details (reply to #3 thread)
 Reply to the MISSING_DETAILS email:
@@ -71,7 +74,7 @@ Expected: follow-up merges fields; audit event UPDATED; confirmation reply; if a
 Subject: New product Pho Spice Mix
 Body:
 ```
-Add product Pho Spice Mix, code PSM, tracks COGS.
+Add product Pho Spice Mix, code PSM.
 Request reason: new SKU for Q2 launch
 ```
 Expected: product request created; code stored; PENDING_APPROVAL; approver email subject "Approval needed: New product Pho Spice Mix".
@@ -115,6 +118,29 @@ Expected: no merge (whitelist); FOLLOW_UP_NOOP reply.
 Open approver's combined link for a PENDING request; click Approve.
 Expected: status becomes CREATED_IN_MDM (BP: pushed to SAP mock; product/order: created); requester notified by email; audit APPROVED.
 
+## 12c. Approval types — regulatory auto-flag for medical-sounding products
+Subject: New product Lab Consumable Set
+Body:
+```
+Add product Lab Consumable Set, code LCS.
+Request reason: importing a lab consumable for the team
+```
+Expected:
+- Approval type = `REGULATORY` automatically (medical/clinical/lab wording).
+- Approver email subject: `Approval needed: Regulatory review — New product Lab Consumable Set`.
+- Request page badge = `Regulatory approval`; requestor notified.
+- Regulatory approver role is `sendtomarkbosco@gmail.com` (`sendtomarkbosco` account is a regulatory approver); for new-field requests IT is additionally required.
+- Audit trail includes `Approval type: REGULATORY`.
+
+## 12d. Approval types — quality default for non-medical products
+Subject: New product Spare Screw
+Body:
+```
+Add product Spare Screw, code SCR2.
+Request reason: non-medical spare part
+```
+Expected: approval type automatically set to `QUALITY`; approver email subject mentions `Quality review`; request page badge = `Quality approval`.
+
 ## 13. Reject (approver link) — reason required
 Open approver link; click Reject. Confirm button disabled until a rejection reason is entered. Enter reason e.g. "Wrong contact email" and confirm.
 Expected: status REJECTED; requester notified email includes "Rejection reason: Wrong contact email"; audit REJECTED with reason; approvals table shows reason. Attempting reject with empty reason returns REJECTION_REASON_REQUIRED and no status change.
@@ -156,5 +182,11 @@ Expected: treated as missing reason -> MISSING_REASON reply.
 ## 20. View-only verification
 Requester link must show ", view-only" suffix and no Approve/Reject buttons (Cancel allowed while pending). Approver link shows Approve/Reject. Bad secret 404.
 
-## 21. UI labels
+## 21. IT approval on new-field requests
+Create a BP/PRODUCT/ORDER request that introduces a new bonus field (or triggers needsItConfig). Expect:
+- Approver email list includes IT (`vanadite111@gmail.com`) alongside the business approver, each with a single review-and-approve link.
+- Approvals table on the magic-link page shows both approvers with `PENDING` status from the start.
+- Request stays `PENDING_APPROVAL` after only the business approver approves; it becomes `CREATED_IN_MDM` once IT also approves. IT receives the same notification email.
+
+## 22. UI labels
 Request detail page shows "Request reason:" for the requester's reason and "Rejection reason:" for the approver's reason. Index table column shows request reason.

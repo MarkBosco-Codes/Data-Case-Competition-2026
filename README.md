@@ -44,7 +44,7 @@ TanStack Start app (React 19) that polls a Zoho AgentInbox mailbox, classifies i
 - `request_bonus_values` (requestId, fieldId, value) PK
 - `business_partners` (id, requestId, processStatus, customData, name, creditTerms, bankAccountNumber, contactName, contactEmail, contactPhone, partnerClass, country, countryOfOrigin, countrySynced, addresses, createdAt)
 - `bank_accounts` (id, bpId, iban, beneficiaryName, ibanValid, beneficiaryMatch, taxFormatValid, approval1By, approval2By, status)
-- `products` (id, code UNIQUE, name, tracksCogs, createdAt)
+- `products` (id, code UNIQUE, name, createdAt)
 - `orders` (id, orderNumber, productCode, partnerId, direction, qty, paymentDate, deliveryDate, createdAt)
 - `processed_emails` (messageId PK, requestId, fromEmail, subject, processedAt, error)
 - `sync_state` (key PK, value)

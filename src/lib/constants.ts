@@ -17,13 +17,13 @@ export const APPROVER_EMAILS = ['sendtomarkbosco@gmail.com'] as const
 
 export function isWhitelistedRequestor(email: string): boolean {
   return (REQUESTOR_EMAILS as readonly string[]).includes(
-    email.trim().toLowerCase(),
+    String(email ?? '').trim().toLowerCase(),
   )
 }
 
 export function isWhitelistedApprover(email: string): boolean {
   return (APPROVER_EMAILS as readonly string[]).includes(
-    email.trim().toLowerCase(),
+    String(email ?? '').trim().toLowerCase(),
   )
 }
 

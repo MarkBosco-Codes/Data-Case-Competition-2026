@@ -22,6 +22,7 @@ import {
   listEmailsFn,
   decideRequest,
   cancelRequest,
+  submitBpDetails,
   syncUsers,
   getUsers,
 } from '~/lib/server-functions'
@@ -89,9 +90,18 @@ interface Props {
   secret: string
 }
 
+const CREDIT_TERMS_EXPLANATIONS: Record<string, string> = {
+  NET15: 'NET 15 — Full payment is due 15 days from the invoice date.',
+  NET30: 'NET 30 — Full payment is due 30 days from the invoice date.',
+  NET45: 'NET 45 — Full payment is due 45 days from the invoice date.',
+  NET60: 'NET 60 — Full payment is due 60 days from the invoice date.',
+  PREPAID: 'PREPAID — Full payment must be received prior to delivery or shipment.',
+}
+
 export function RequestPage({ initial, requestId, secret }: Props) {
   const decide = useServerFn(decideRequest)
   const cancel = useServerFn(cancelRequest)
+  const submitDetails = useServerFn(submitBpDetails)
   const router = useRouter()
   const userNames = initial.userNames
   const [approverList, setApproverList] = useState<string[]>(initial.approvers)
@@ -106,6 +116,46 @@ export function RequestPage({ initial, requestId, secret }: Props) {
   const [lastWire, setLastWire] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | 'cancel' | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+
+  const [formBank, setFormBank] = useState(request.payload?.bankAccountNumber ?? '')
+  const [formCredit, setFormCredit] = useState<string>(request.payload?.creditTerms ?? '')
+  const [formReg, setFormReg] = useState(request.approvalType === 'REGULATORY' || request.regulatoryApproved === 'PENDING')
+  const [formError, setFormError] = useState<string | null>(null)
+  const [isSubmittingDetails, setIsSubmittingDetails] = useState(false)
+
+  const onSubmitBpDetails = async () => {
+    if (!formBank.trim() || !formCredit) return
+    setIsSubmittingDetails(true)
+    setFormError(null)
+    try {
+      const res = await submitDetails({
+        data: {
+          requestId,
+          secret,
+          bankAccountNumber: formBank.trim(),
+          creditTerms: formCredit as any,
+          requiresRegulatoryApproval: formReg,
+        },
+      })
+      if (res.ok) {
+        setMsg('Bank details and credit terms submitted successfully! Sent to approvers.')
+        const fresh = (await loadBySecret({ data: { id: requestId, secret } })) as MagicLoad
+        setRequest(fresh.request)
+        setApprovals(fresh.approvals)
+        setApproverList(fresh.approvers ?? approverList)
+        setAudit(fresh.audit)
+        setEmails(fresh.emails)
+        setApiRequests(fresh.apiRequests ?? [])
+        router.invalidate({ sync: true })
+      } else {
+        setFormError(res.error)
+      }
+    } catch (err: any) {
+      setFormError(err?.message ?? 'Failed to submit details')
+    } finally {
+      setIsSubmittingDetails(false)
+    }
+  }
 
   const onDecide = async (decision: 'APPROVE' | 'REJECT', note?: string) => {
     const res = await decide({ data: { requestId, secret, decision, note } })
@@ -158,14 +208,30 @@ export function RequestPage({ initial, requestId, secret }: Props) {
   const canDecide = request.status === 'PENDING_APPROVAL' && !!viewer?.canApprove
   const isRequester = !!viewer && viewer.email === request.requesterEmail
 
+  const formatApproverName = (email: string) => {
+    const raw = userNames[email] ?? email
+    if (email === 'sendtomarkbosco@gmail.com' || raw.toLowerCase().includes('regulatory')) {
+      const clean = raw.replace(/\s*\(regulatory\)/i, '')
+      return `${clean} (regulatory)`
+    }
+    if (email === 'vanadite111@gmail.com' || raw.toLowerCase().includes('it')) {
+      const clean = raw.replace(/\s*\(it\)/i, '')
+      return `${clean} (IT)`
+    }
+    return raw
+  }
+
+  const itApproval = approvals.find((a) => a.approverEmail === 'vanadite111@gmail.com')
+  const itStatus = itApproval ? itApproval.decision : 'PENDING'
+
   const requesterName = userNames[request.requesterEmail] ?? request.requesterEmail
   const approvedRows = approvals.filter((a) => a.decision === 'APPROVED')
   const rejectedRows = approvals.filter((a) => a.decision === 'REJECTED')
   const decisionLine =
     approvedRows.length > 0
-      ? `Approved by ${approvedRows.map((a) => userNames[a.approverEmail] ?? a.approverEmail).join(', ')} on ${approvedRows[approvedRows.length - 1].decidedAt.slice(0, 16).replace('T', ' ')}`
+      ? `Approved by ${approvedRows.map((a) => formatApproverName(a.approverEmail)).join(', ')} on ${approvedRows[approvedRows.length - 1].decidedAt.slice(0, 16).replace('T', ' ')}`
       : rejectedRows.length > 0
-        ? `Rejected by ${rejectedRows.map((a) => userNames[a.approverEmail] ?? a.approverEmail).join(', ')} on ${rejectedRows[rejectedRows.length - 1].decidedAt.slice(0, 16).replace('T', ' ')}`
+        ? `Rejected by ${rejectedRows.map((a) => formatApproverName(a.approverEmail)).join(', ')} on ${rejectedRows[rejectedRows.length - 1].decidedAt.slice(0, 16).replace('T', ' ')}`
         : 'Pending approval — no decision recorded yet'
 
   const statusLabel2 = statusLabel[request.status] ?? request.status
@@ -202,11 +268,35 @@ export function RequestPage({ initial, requestId, secret }: Props) {
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <b style={{ fontSize: 16 }}>{request.type.replace(/_/g, ' ')}</b>
+          <span style={badge(T.navy)}>Quality: N/A</span>
+          <span
+            style={badge(
+              request.regulatoryApproved === 'APPROVED'
+                ? '#147a3d'
+                : request.regulatoryApproved === 'REJECTED'
+                  ? T.red
+                  : request.regulatoryApproved === 'PENDING'
+                    ? '#b26a00'
+                    : T.navy,
+            )}
+          >
+            Regulatory: {request.regulatoryApproved ?? 'N/A'}
+          </span>
+          {request.needsItConfig && (
+            <span
+              style={badge(
+                itStatus === 'APPROVED'
+                  ? '#147a3d'
+                  : itStatus === 'REJECTED'
+                    ? T.red
+                    : '#b26a00',
+              )}
+            >
+              IT: {itStatus}
+            </span>
+          )}
           {request.bpClass && <span style={badge(T.navy)}>{request.bpClass === 'CUSTOMER' ? 'Customer' : 'Supplier'}</span>}
           <span style={badge(statusColors[request.status] ?? T.navy)}>{statusLabel2}</span>
-          {request.needsItConfig && (
-            <span style={badge('#b26a00')}>new datafields — IT configuration needed</span>
-          )}
         </div>
 
         <div style={{ fontSize: 13, color: T.muted, marginTop: 10 }}>
@@ -214,7 +304,7 @@ export function RequestPage({ initial, requestId, secret }: Props) {
           {request.createdAt.slice(0, 16).replace('T', ' ')}
         </div>
         <div style={{ fontSize: 13, color: T.muted }}>
-          Approvers: {approverList.map((a) => userNames[a] ?? a).join(', ') || 'none assigned'} · {decisionLine}
+          Approvers: {approverList.map((a) => formatApproverName(a)).join(', ') || 'none assigned'} · {decisionLine}
         </div>
         {request.requestReason && (
           <div style={reasonBox}>
@@ -226,15 +316,11 @@ export function RequestPage({ initial, requestId, secret }: Props) {
             <b>{request.status === 'REJECTED' ? 'Rejection reason:' : 'Decision note:'}</b> {request.decisionNote}
           </div>
         )}
-        {request.bonusText && (
-          <div style={{ fontSize: 14, marginTop: 8 }}>Free-text: “{request.bonusText}”</div>
-        )}
-
         <h3 style={{ ...sectionTitle, marginTop: 20 }}>Details</h3>
         <table style={tableStyles.table} cellPadding={6}>
           <tbody>
             {Object.entries(request.payload)
-              .filter(([k]) => k !== 'countryOfOrigin')
+              .filter(([k]) => k !== 'countryOfOrigin' && k !== 'approvers' && k !== 'tracksCogs')
               .map(([k, v]) => {
                 const val =
                   k === 'country' && request.payload?.countryOfOrigin
@@ -249,6 +335,22 @@ export function RequestPage({ initial, requestId, secret }: Props) {
                   </tr>
                 )
               })}
+            {request.bonusText && (() => {
+              const cleanBonus = request.bonusText
+                .replace(/^(?:add\s+(?:a\s+)?field|new\s+field|extra\s+field|custom\s+field|field)[:\s]*/i, '')
+                .trim()
+              const hasColon = cleanBonus.includes(':')
+              const keyName = hasColon ? cleanBonus.split(':')[0].trim() : cleanBonus
+              const valName = hasColon ? cleanBonus.split(':').slice(1).join(':').trim() : cleanBonus
+              return (
+                <tr key="bonus_field_row" style={tableStyles.rowBordered}>
+                  <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {keyName} <span style={{ color: T.red, fontSize: 12, fontWeight: 600 }}>(new field)</span>
+                  </td>
+                  <td style={{ wordBreak: 'break-all' }}>{valName}</td>
+                </tr>
+              )
+            })()}
           </tbody>
         </table>
 
@@ -271,6 +373,77 @@ export function RequestPage({ initial, requestId, secret }: Props) {
             >
               Reject
             </button>
+          </div>
+        )}
+
+        {isRequester && request.status === 'IN_PROGRESS' && request.type === 'BUSINESS_PARTNER' && (
+          <div style={{ marginTop: 24, padding: 20, borderRadius: 12, background: '#f8fafc', border: `1px solid ${T.border}` }}>
+            <h3 style={{ ...sectionTitle, margin: 0 }}>Complete Business Partner Details</h3>
+            <p style={{ fontSize: 14, color: T.muted, marginTop: 4, marginBottom: 16 }}>
+              Please enter your Bank Account Number and select your Credit Terms to submit this request for approval.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 520 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                  Bank Account Number <span style={{ color: T.red }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formBank}
+                  onChange={(e) => setFormBank(e.target.value)}
+                  placeholder="e.g. US1234567890 or 123456789"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                  Credit Terms <span style={{ color: T.red }}>*</span>
+                </label>
+                <select
+                  value={formCredit}
+                  onChange={(e) => setFormCredit(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14 }}
+                >
+                  <option value="">Select credit terms...</option>
+                  <option value="NET15">NET 15</option>
+                  <option value="NET30">NET 30</option>
+                  <option value="NET45">NET 45</option>
+                  <option value="NET60">NET 60</option>
+                  <option value="PREPAID">PREPAID</option>
+                </select>
+                {formCredit && CREDIT_TERMS_EXPLANATIONS[formCredit] && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: T.navyDark, background: '#edf2f7', padding: '8px 12px', borderRadius: 6 }}>
+                    <b>Explanation:</b> {CREDIT_TERMS_EXPLANATIONS[formCredit]}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={formReg}
+                    onChange={(e) => setFormReg(e.target.checked)}
+                  />
+                  <b>Requires regulatory approval</b> (check if product/partner requires regulatory review)
+                </label>
+              </div>
+
+              {formError && <div style={{ color: T.red, fontSize: 13 }}>{formError}</div>}
+
+              <div>
+                <button
+                  type="button"
+                  disabled={!formBank.trim() || !formCredit || isSubmittingDetails}
+                  onClick={onSubmitBpDetails}
+                  style={primaryBtn({ disabled: !formBank.trim() || !formCredit || isSubmittingDetails })}
+                >
+                  {isSubmittingDetails ? 'Submitting...' : 'Submit request'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -315,7 +488,7 @@ export function RequestPage({ initial, requestId, secret }: Props) {
               <tbody>
                 {displayApprovals.map((a) => (
                   <tr key={`${a.approverEmail}|${a.decidedAt}`} style={tableStyles.rowBordered}>
-                     <td>{userNames[a.approverEmail] ?? a.approverEmail}</td>
+                     <td>{formatApproverName(a.approverEmail)}</td>
                      <td>{a.decision}</td>
                      <td style={{ fontSize: 12 }}>{a.reason ?? '—'}</td>
                      <td style={{ fontSize: 12, color: T.muted }}>{a.decidedAt ? a.decidedAt.slice(0, 16).replace('T', ' ') : '—'}</td>

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import path from 'node:path'
 import fs from 'node:fs'
 import { parse as parseYaml } from 'yaml'
+import crypto from 'node:crypto'
 
 const DB_PATH = path.join(process.cwd(), '.datagent.db')
 
@@ -55,16 +56,20 @@ CREATE TABLE IF NOT EXISTS requests (
   type TEXT NOT NULL,              -- BUSINESS_PARTNER | PRODUCT | ORDER
   bpClass TEXT,                    -- for BUSINESS_PARTNER: CUSTOMER (cash inflow) | VENDOR (cash outflow)
   requesterEmail TEXT NOT NULL,
-  status TEXT NOT NULL,            -- NEW | PENDING_APPROVAL | APPROVED | REJECTED | CREATED_IN_MDM
+  status TEXT NOT NULL,            -- NEW | IN_PROGRESS | PENDING_APPROVAL | APPROVED | REJECTED | CREATED_IN_MDM
   payload TEXT NOT NULL,           -- JSON request payload (schema-validated for BP)
   requestReason TEXT,            -- mandatory justification for the request
   needsItConfig INTEGER NOT NULL DEFAULT 0, -- new datafields not covered by bonus fields
+  approvalType TEXT NOT NULL DEFAULT 'QUALITY', -- QUALITY | REGULATORY
+  qualityApproved TEXT NOT NULL DEFAULT 'N/A', -- N/A | PENDING | APPROVED | REJECTED
+  regulatoryApproved TEXT NOT NULL DEFAULT 'N/A', -- N/A | PENDING | APPROVED | REJECTED
   bonusText TEXT,                  -- requester free-text used by agent to match/add bonus fields
   decidedBy TEXT,
   decisionNote TEXT,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );
+
 -- Bonus fields: nullable extension attributes per main data type; agent picks the
 -- best match for requester free-text or creates a new subclass.
 CREATE TABLE IF NOT EXISTS bonus_fields (
@@ -114,7 +119,6 @@ CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
   code TEXT UNIQUE NOT NULL,       -- A | B | C (extensible)
   name TEXT NOT NULL,
-  tracksCogs INTEGER NOT NULL DEFAULT 1,
   createdAt TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS orders (
@@ -148,6 +152,12 @@ try {
 } catch {
   /* column already exists */
 }
+// Migration: approval type per request (quality vs regulatory)
+try {
+  db.exec("ALTER TABLE requests ADD COLUMN approvalType TEXT NOT NULL DEFAULT 'QUALITY'")
+} catch {
+  /* column already exists */
+}
 // Migration: rename mandatory request reason column (reason -> requestReason)
 try {
   db.exec('ALTER TABLE requests RENAME COLUMN reason TO requestReason')
@@ -161,6 +171,17 @@ try {
   /* column already exists */
 }
 // Migration: user directory name/title from users.yaml
+// Migration: approval status columns (QualityApproved hardcoded N/A, RegulatoryApproved N/A|PENDING|APPROVED|REJECTED)
+try {
+  db.exec("ALTER TABLE requests ADD COLUMN qualityApproved TEXT NOT NULL DEFAULT 'N/A'")
+} catch {
+  /* column already exists */
+}
+try {
+  db.exec("ALTER TABLE requests ADD COLUMN regulatoryApproved TEXT NOT NULL DEFAULT 'N/A'")
+} catch {
+  /* column already exists */
+}
 try {
   db.exec('ALTER TABLE users ADD COLUMN name TEXT')
 } catch {
@@ -242,10 +263,10 @@ function seed() {
   const pc = db.prepare('SELECT COUNT(*) AS c FROM products').get() as { c: number }
   if (pc.c === 0) {
     const ins = db.prepare(
-      'INSERT INTO products (id, code, name, tracksCogs, createdAt) VALUES (?,?,?,?,?)',
+      'INSERT INTO products (id, code, name, createdAt) VALUES (?,?,?,?)',
     )
     for (const code of ['A', 'B', 'C']) {
-      ins.run(crypto.randomUUID(), code, `Product ${code}`, 1, now)
+      ins.run(crypto.randomUUID(), code, `Product ${code}`, now)
     }
   }
   const bc = db
@@ -329,7 +350,7 @@ CREATE TABLE IF NOT EXISTS api_requests (
 );
 `)
 
-// ---- Per-recipient magic links ----------------------------------------------
+// ---- Per-recipient magic links -----------------------------------------------
 // Every request participant gets their own secret link: requestors view-only,
 // approvers (matched to the link's own email) get decision rights, so neither
 // side ever has to type an email address.
@@ -407,8 +428,8 @@ export function upsertUser(email: string, roles: string[]): UserRow {
 }
 
 export function setLinks(requesterEmail: string, approverEmail: string) {
-  const r = db.prepare('SELECT id FROM users WHERE email = ?').get(requesterEmail.trim().toLowerCase()) as any
-  const a = db.prepare('SELECT id FROM users WHERE email = ?').get(approverEmail.trim().toLowerCase()) as any
+  const r = db.prepare('SELECT id FROM users WHERE email = ?').get(String(requesterEmail ?? '').trim().toLowerCase()) as any
+  const a = db.prepare('SELECT id FROM users WHERE email = ?').get(String(approverEmail ?? '').trim().toLowerCase()) as any
   if (!r || !a) return false
   db.prepare(
     'INSERT OR IGNORE INTO requester_approvers (requesterUserId, approverUserId) VALUES (?,?)',
@@ -430,7 +451,7 @@ export function listLinks(): { requester: string; approver: string }[] {
 export function userRoles(email: string): string[] {
   const u = db
     .prepare('SELECT roles FROM users WHERE email = ?')
-    .get(email.trim().toLowerCase()) as any | undefined
+    .get(String(email ?? '').trim().toLowerCase()) as any | undefined
   return u ? (JSON.parse(u.roles) as string[]) : []
 }
 
@@ -442,7 +463,7 @@ export function approverAssignedTo(requesterEmail: string, approverEmail: string
        JOIN users a ON a.id = ra.approverUserId
        WHERE r.email = ? AND a.email = ?`,
     )
-    .get(requesterEmail.trim().toLowerCase(), approverEmail.trim().toLowerCase())
+    .get(String(requesterEmail ?? '').trim().toLowerCase(), String(approverEmail ?? '').trim().toLowerCase())
 }
 
 // ---- Requests ---------------------------------------------------------------
@@ -458,6 +479,9 @@ export interface RequestRow {
   payload: any
   requestReason: string | null
   needsItConfig: boolean
+  approvalType: 'QUALITY' | 'REGULATORY'
+  qualityApproved: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  regulatoryApproved: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
   bonusText: string | null
   decidedBy: string | null
   decisionNote: string | null
@@ -483,15 +507,15 @@ export function getRequestByToken(token: string): RequestRow | undefined {
 
 export function getLatestPendingRequest(requesterEmail: string): RequestRow | undefined {
   const row = db
-    .prepare('SELECT * FROM requests WHERE requesterEmail = ? AND status = ? ORDER BY createdAt DESC LIMIT 1')
-    .get(requesterEmail.trim().toLowerCase(), 'PENDING_APPROVAL') as any
+    .prepare("SELECT * FROM requests WHERE requesterEmail = ? AND (status = 'PENDING_APPROVAL' OR status = 'IN_PROGRESS') ORDER BY createdAt DESC LIMIT 1")
+    .get(String(requesterEmail ?? '').trim().toLowerCase()) as any
   return row ? hydrateRequest(row) : undefined
 }
 
 export function getLatestRequest(requesterEmail: string): RequestRow | undefined {
   const row = db
     .prepare('SELECT * FROM requests WHERE requesterEmail = ? ORDER BY createdAt DESC LIMIT 1')
-    .get(requesterEmail.trim().toLowerCase()) as any
+    .get(String(requesterEmail ?? '').trim().toLowerCase()) as any
   return row ? hydrateRequest(row) : undefined
 }
 
@@ -513,6 +537,8 @@ function hydrateRequest(row: any): RequestRow {
     ...row,
     payload: JSON.parse(row.payload ?? '{}'),
     needsItConfig: !!row.needsItConfig,
+    qualityApproved: 'N/A', // Hardcoded QualityApproved to N/A for all cases per user instruction
+    regulatoryApproved: row.regulatoryApproved ?? 'N/A',
   }
 }
 
@@ -524,23 +550,31 @@ export function insertRequest(r: {
   status: string
   payload: any
   needsItConfig?: boolean
+  approvalType?: 'QUALITY' | 'REGULATORY'
+  qualityApproved?: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  regulatoryApproved?: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
   requestReason?: string | null
   bonusText?: string | null
 }): RequestRow {
   const id = crypto.randomUUID()
   const token = crypto.randomUUID()
   const now = new Date().toISOString()
+  const qualityApproved = 'N/A' // Hardcoded QualityApproved to N/A for all cases
+  const regulatoryApproved = r.regulatoryApproved ?? (r.approvalType === 'REGULATORY' ? 'PENDING' : 'N/A')
   db.prepare(`INSERT INTO requests
-    (id, threadId, type, bpClass, requesterEmail, status, payload, needsItConfig, requestReason, bonusText, token, createdAt, updatedAt)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    (id, threadId, type, bpClass, requesterEmail, status, payload, needsItConfig, approvalType, qualityApproved, regulatoryApproved, requestReason, bonusText, token, createdAt, updatedAt)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     id,
     r.threadId ?? null,
     r.type,
     r.bpClass ?? null,
-    r.requesterEmail.trim().toLowerCase(),
+    String(r.requesterEmail ?? '').trim().toLowerCase(),
     r.status,
     JSON.stringify(r.payload),
     r.needsItConfig ? 1 : 0,
+    r.approvalType ?? 'QUALITY',
+    qualityApproved,
+    regulatoryApproved,
     r.requestReason ?? null,
     r.bonusText ?? null,
     token,
@@ -548,6 +582,25 @@ export function insertRequest(r: {
     now,
   )
   return getRequest(id)!
+}
+
+export function updateRequestApprovalColumns(
+  id: string,
+  qualityApproved?: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED',
+  regulatoryApproved?: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED',
+) {
+  const updates: string[] = []
+  const params: any[] = []
+  // qualityApproved is hardcoded to N/A
+  updates.push("qualityApproved = 'N/A'")
+  if (regulatoryApproved !== undefined) {
+    updates.push('regulatoryApproved = ?')
+    params.push(regulatoryApproved)
+  }
+  updates.push('updatedAt = ?')
+  params.push(new Date().toISOString())
+  params.push(id)
+  db.prepare(`UPDATE requests SET ${updates.join(', ')} WHERE id = ?`).run(...params)
 }
 
 export function updateRequestStatus(
@@ -569,7 +622,7 @@ export function recordApproval(
 ) {
   db.prepare(
     'INSERT OR REPLACE INTO request_approvals (requestId, approverEmail, decision, reason, decidedAt) VALUES (?,?,?,?,?)',
-  ).run(requestId, approverEmail.trim().toLowerCase(), decision, reason ?? null, new Date().toISOString())
+  ).run(requestId, String(approverEmail ?? '').trim().toLowerCase(), decision, reason ?? null, new Date().toISOString())
 }
 
 export function listApprovals(requestId: string): { approverEmail: string; decision: string; decidedAt: string }[] {
@@ -593,10 +646,10 @@ export function listAudit(requestId: string): { seq: number; actor: string; acti
     .all(requestId) as any
 }
 
-export function recordEmail(requestId: string, toEmail: string, subject: string, body: string) {
+export function recordEmail(requestId: string, toEmail: string | null, subject: string, body: string) {
   db.prepare(
     'INSERT INTO emails (id, requestId, toEmail, subject, body, createdAt) VALUES (?,?,?,?,?,?)',
-  ).run(crypto.randomUUID(), requestId, toEmail.trim().toLowerCase(), subject, body, new Date().toISOString())
+  ).run(crypto.randomUUID(), requestId, String(toEmail ?? '').trim().toLowerCase(), subject, body, new Date().toISOString())
 }
 
 export function listEmails(requestId: string): { toEmail: string; subject: string; body: string; createdAt: string }[] {
@@ -754,8 +807,8 @@ export function listOrders() {
   return db.prepare('SELECT * FROM orders ORDER BY createdAt DESC').all()
 }
 
-export function insertProduct(p: { id: string; code: string; name: string; tracksCogs: number; createdAt: string }) {
-  db.prepare(`INSERT INTO products (id, code, name, tracksCogs, createdAt) VALUES (@id,@code,@name,@tracksCogs,@createdAt)`).run(p)
+export function insertProduct(p: { id: string; code: string; name: string; createdAt: string }) {
+  db.prepare(`INSERT INTO products (id, code, name, createdAt) VALUES (@id,@code,@name,@createdAt)`).run(p)
 }
 
 export function insertOrder(o: any) {
@@ -768,7 +821,8 @@ export function insertOrder(o: any) {
 // ---- Zoho AgentInbox ingestion helpers --------------------------------------
 
 export function isEmailProcessed(messageId: string): boolean {
-  return !!db.prepare('SELECT 1 FROM processed_emails WHERE messageId = ?').get(messageId)
+  const row = db.prepare('SELECT error FROM processed_emails WHERE messageId = ?').get(messageId) as any
+  return !!row && row.error === null
 }
 
 export function markEmailProcessed(

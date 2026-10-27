@@ -35,6 +35,8 @@ import {
   updatePartnerStatus,
   updatePartnerRecord,
   updateRequestStatus,
+  updateRequestApprovalColumns,
+  updateRequestPayload,
   upsertUser,
   userRoles,
 } from '~/lib/db'
@@ -163,21 +165,6 @@ export const submitBpIntake = createServerFn({ method: 'POST' })
 
     insertPartner(bp)
 
-    // New datafields not covered by bonus fields need IT-team configuration.
-    const bankNumberTaxIdOk = isValidTaxFormat(data.country, data.bankAccountNumber)
-    const needsItConfig = !bankNumberTaxIdOk
-
-    const businessApprovers = listLinks()
-      .filter((l) => l.requester === data.requestorEmail.trim().toLowerCase())
-      .map((l) => l.approver)
-    const approverList = businessApprovers.length
-      ? businessApprovers
-      : (listUsers() as any[]).filter((u) => (u.roles || []).includes('approver')).map((u) => u.email)
-    const requiredApprovers = [...approverList]
-    if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
-      requiredApprovers.push('vanadite111@gmail.com')
-    }
-
     // Agent picks the bonus field that best matches the requester free-text
     // email; creates a new subclass if the attribute is not covered yet.
     const bonusText = (data.notes ?? '').trim() || null
@@ -185,8 +172,21 @@ export const submitBpIntake = createServerFn({ method: 'POST' })
     let matchedBonus: ReturnType<typeof matchBonusField> = null
     let createdBonus: string | null = null
     if (bonusText) {
-      const fields = listBonusFields('businessPartner') as Parameters<typeof matchBonusField>[0]
+      const fields = listBonusFields('businessPartner')
       matchedBonus = matchBonusField(fields, bonusText)
+    }
+    const derivedNewField = bonusText && !matchedBonus && !!deriveBonusName(bonusText)
+    const needsItConfig = !!derivedNewField
+
+    const businessApprovers = listLinks()
+      .filter((l) => l.requester === String(data.requestorEmail ?? '').trim().toLowerCase())
+      .map((l) => l.approver)
+    const approverList = businessApprovers.length
+      ? businessApprovers
+      : (listUsers() as any[]).filter((u) => (u.roles || []).includes('approver')).map((u) => u.email)
+    const requiredApprovers = [...approverList]
+    if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
+      requiredApprovers.push('vanadite111@gmail.com')
     }
 
     // Agentic MDM request: 1 email thread = 1 conversation context = 1 request
@@ -209,6 +209,7 @@ export const submitBpIntake = createServerFn({ method: 'POST' })
         approvers: requiredApprovers,
       },
       needsItConfig,
+      approvalType: 'QUALITY',
       requestReason: reason,
       bonusText,
     })
@@ -247,6 +248,122 @@ export const submitBpIntake = createServerFn({ method: 'POST' })
     }
   })
 
+export const submitBpDetails = createServerFn({ method: 'POST' })
+  .validator(
+    (data: {
+      requestId: string
+      secret: string
+      bankAccountNumber: string
+      creditTerms: 'NET15' | 'NET30' | 'NET45' | 'NET60' | 'PREPAID'
+      requiresRegulatoryApproval?: boolean
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const link = getRequestLink(data.requestId, data.secret)
+    if (!link) {
+      return { ok: false as const, error: 'ACCESS_DENIED: invalid link' }
+    }
+    const req = getRequest(data.requestId)
+    if (!req) return { ok: false as const, error: 'NOT_FOUND' }
+
+    if (req.status !== 'IN_PROGRESS' && req.status !== 'NEW') {
+      return { ok: false as const, error: `Request status is ${req.status}` }
+    }
+
+    const bankAccountNumber = (data.bankAccountNumber ?? '').trim()
+    const creditTerms = data.creditTerms
+    if (!bankAccountNumber) {
+      return { ok: false as const, error: 'Bank account number is required' }
+    }
+    if (!creditTerms) {
+      return { ok: false as const, error: 'Credit terms are required' }
+    }
+
+    let approvalType = req.approvalType
+    let regulatoryApproved = req.regulatoryApproved
+    if (data.requiresRegulatoryApproval) {
+      approvalType = 'REGULATORY'
+      regulatoryApproved = 'PENDING'
+    }
+
+    const businessApprovers = listLinks()
+      .filter((l) => l.requester === String(req.requesterEmail ?? '').trim().toLowerCase())
+      .map((l) => l.approver)
+    const approverList = businessApprovers.length
+      ? businessApprovers
+      : (listUsers() as any[]).filter((u) => (u.roles || []).includes('approver')).map((u) => u.email)
+    const requiredApprovers = [...approverList]
+    if (approvalType === 'REGULATORY') {
+      for (const u of listUsers() as any[]) {
+        if ((u.roles || []).includes('regulatory') && !requiredApprovers.includes(u.email)) {
+          requiredApprovers.push(u.email)
+        }
+      }
+    }
+
+    const needsItConfig = !!req.needsItConfig
+    if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
+      requiredApprovers.push('vanadite111@gmail.com')
+    }
+
+    const updatedPayload = {
+      ...req.payload,
+      bankAccountNumber,
+      creditTerms,
+      approvers: requiredApprovers,
+    }
+
+    updateRequestPayload(req.id, updatedPayload)
+    updateRequestStatus(req.id, 'PENDING_APPROVAL')
+    updateRequestApprovalColumns(req.id, 'N/A', regulatoryApproved)
+
+    const last4 = bankAccountNumber.slice(-4)
+    const maskedBank = '*'.repeat(Math.max(0, bankAccountNumber.length - 4)) + last4
+
+    appendAudit(
+      req.id,
+      req.requesterEmail,
+      'SUBMITTED',
+      `Requester submitted Bank Account Number (${maskedBank}). Request sent for approval.`,
+    )
+
+    const partnerName = req.payload?.name
+    const partner = partnerName ? (listPartners() as any[]).find((p) => p.name === partnerName) : undefined
+    if (partner) {
+      updatePartnerRecord(partner.id, {
+        bankAccountNumber,
+        creditTerms,
+      })
+    }
+
+    const wire = template({
+      request_id: req.id,
+      process_status: 'PENDING_APPROVAL',
+      custom_data: { name: partnerName, bankAccountNumber, creditTerms },
+    })
+
+    const subjectPrefix = approvalType === 'REGULATORY' ? 'Regulatory review — ' : 'Quality review — '
+    const subject = `Approval needed: ${subjectPrefix}New ${req.bpClass ?? 'Partner'} ${partnerName}`
+    const detailText = `Name: ${partnerName}\nPartner class: ${req.bpClass}\nBank Account: ${bankAccountNumber}\nCredit Terms: ${creditTerms}\nRequest reason: ${req.requestReason ?? 'N/A'}`
+
+    for (const approverEmail of requiredApprovers) {
+      const appLink = ensureRequestLink(req.id, approverEmail, true)
+      const reviewUrl = `${APP_URL}/r/${req.id}/${appLink.secret}`
+      const body = `Hi,\n\nA new business-partner request requires your approval.\n\n${detailText}\n\nYour link (review and approve):\n${reviewUrl}\n\nWire:\n${wire}\n\nThanks,\nLifeGroup DataGent`
+      await sendMail({
+        fromAddress: mailboxEmail(),
+        toAddress: approverEmail,
+        subject,
+        content: body,
+      })
+      recordEmail(req.id, approverEmail, subject, body)
+    }
+
+    insertApiRequest(req.id, wire)
+
+    return { ok: true as const, status: 'PENDING_APPROVAL' }
+  })
+
 // ---- Read side --------------------------------------------------------------
 
 export const getPartners = createServerFn({ method: 'GET' }).handler(() => {
@@ -269,7 +386,6 @@ interface ProductRow {
   id: string
   code: string
   name: string
-  tracksCogs: number
   createdAt: string
 }
 interface OrderRow {
@@ -324,7 +440,9 @@ export const decideRequest = createServerFn({ method: 'POST' })
     const approverEmail = link.email
 
     const denied =
-      userRoles(approverEmail).includes('approver') || userRoles(approverEmail).includes('it')
+      userRoles(approverEmail).includes('approver') ||
+      userRoles(approverEmail).includes('regulatory') ||
+      userRoles(approverEmail).includes('it')
         ? null
         : { ok: false as const, error: `ACCESS_DENIED: ${approverEmail} is not an approver` }
     if (denied) return denied
@@ -352,6 +470,7 @@ export const decideRequest = createServerFn({ method: 'POST' })
       recordApproval(req.id, approverEmail, 'REJECTED', rejectionReason)
       appendAudit(req.id, approverEmail, 'REJECTED', rejectionReason)
       updateRequestStatus(req.id, 'REJECTED', approverEmail, rejectionReason)
+      updateRequestApprovalColumns(req.id, 'N/A', req.regulatoryApproved !== 'N/A' ? 'REJECTED' : 'N/A')
       const requester = listUsers().find((u) => u.email === req.requesterEmail)
       const rejectBody = `Hi ${requester?.name ?? req.requesterEmail},\n\nYour request was rejected by ${approverEmail}.\nRejection reason: ${rejectionReason}\nStatus: REJECTED.\n\nView: ${APP_URL}/r/${req.id}/${ensureRequestLink(req.id, req.requesterEmail, false).secret}`
       await sendMail({
@@ -399,6 +518,9 @@ export const decideRequest = createServerFn({ method: 'POST' })
 
     const status = final ? 'CREATED_IN_MDM' : 'PENDING_APPROVAL'
     updateRequestStatus(req.id, status, approverEmail, data.note ?? null)
+    if (final) {
+      updateRequestApprovalColumns(req.id, 'N/A', req.regulatoryApproved !== 'N/A' ? 'APPROVED' : 'N/A')
+    }
 
     const wire = template({
       request_id: req.id,

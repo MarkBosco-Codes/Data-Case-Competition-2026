@@ -181,4 +181,18 @@ export async function sendReply(opts: {
   return { ok: true, messageId: r.body?.data?.messageId }
 }
 
+export async function markMessageRead(messageId: string): Promise<{ ok: boolean; error?: string }> {
+  const resolved = await resolveAgentName()
+  if (!resolved.name) return { ok: false, error: resolved.error }
+  const r = await zohoFetch(`/agents/${resolved.name}/messages/${messageId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ mode: 'markAsRead' }),
+  })
+  const code = r.body?.status?.code ?? r.status
+  if (!r.ok || (code !== 200 && code !== undefined)) {
+    return { ok: false, error: r.body?.status?.description ?? r.text }
+  }
+  return { ok: true }
+}
+
 export { isEmailProcessed, markEmailProcessed }

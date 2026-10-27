@@ -2,17 +2,17 @@
 # The users table in SQLite is synced from this file on every run.
 users:
   - name: IT_team
-    email: vanadite111@gmail.com
+    email: mbprojects2022@gmail.com
     title: IT support
     roles: [it]
   - name: Mike Bao
-    email: mbprojects2022@gmail.com
+    email: mg.bosco.2025@business.smu.edu.sg
     title: sales associate
     roles: [requester]
-  - name: Mark Bosco
+  - name: Reggie Boss
     email: sendtomarkbosco@gmail.com
-    title: head of sales
-    roles: [approver]
+    title: head of sales (regulatory approver)
+    roles: [approver, regulatory]
 
 # Mark Bosco approves Mike Bao
 assignments:

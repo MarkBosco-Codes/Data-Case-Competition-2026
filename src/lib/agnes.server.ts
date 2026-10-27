@@ -99,16 +99,17 @@ export async function parseEmailToIntake(email: { subject: string; content: stri
 - ORDER: creating a new order (sales/purchase)
 - UNKNOWN: cannot determine
 
-Return ONLY a JSON object. Common fields: "type" (one of above), "intent" ("create" | "modify" | "delete" — default "create"; use "modify"/"delete" only when the email is a reply changing an already-approved record), "requestReason" (MANDATORY concise justification of why this request is needed; only null if the email truly does not state one), "notes" (free text / bonus requirements or null).
+Return ONLY a JSON object. Common fields: "type" (one of above), "intent" ("create" | "modify" | "delete" — default "create"; use "modify"/"delete" only when the email is a reply changing an already-approved record), "requestReason" (MANDATORY concise justification of why this request is needed; only null if the email truly does not state one), "notes" (free text / bonus requirements / custom fields or null).
+
+IMPORTANT: "notes" MUST capture any new/custom fields, extra attributes, or specifications requested in the email (e.g. "Add a field colour: green" -> notes: "colour: green"). NEVER set notes to null if the email mentions extra fields, new fields, or custom attributes.
 
 If type is BUSINESS_PARTNER, also include:
-  "name", "creditTerms" (NET15/NET30/NET45/NET60/PREPAID or null),
-  "bankAccountNumber", "contactName" (required), "contactEmail" (required company email, not the requester), "contactPhone" (required),
+  "name", "contactName" (required), "contactEmail" (required company email, not the requester), "contactPhone" (required),
   "partnerClass" ("Customer" or "Supplier"), "country" (Singapore/Malaysia/Thailand/Vietnam/Indonesia or null, required),
-  "countryOfOrigin", "addresses" (single string — the full address, required).
+  "countryOfOrigin", "addresses" (single string — the full address, required). Note: creditTerms and bankAccountNumber are filled in later by the user via form; ignore if missing in email.
 
 If type is PRODUCT, also include:
-  "code" (A/B/C or a new code), "name", "tracksCogs" (boolean or null).
+  "code" (A/B/C or a new code), "name".
 
 If type is ORDER, also include:
   "orderNumber", "productCode", "partnerName" (customer or vendor name),

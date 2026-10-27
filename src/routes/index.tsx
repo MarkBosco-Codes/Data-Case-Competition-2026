@@ -28,6 +28,9 @@ type RequestRow = {
   requesterEmail: string
   status: string
   requestReason: string | null
+  approvalType: 'QUALITY' | 'REGULATORY'
+  qualityApproved: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  regulatoryApproved: 'N/A' | 'PENDING' | 'APPROVED' | 'REJECTED'
   createdAt: string
 }
 
@@ -180,6 +183,12 @@ function HomePage() {
                     <tr key={r.id} style={tableStyles.rowBordered}>
                       <td style={{ padding: '12px 10px 12px 0', whiteSpace: 'nowrap' }}>
                         <b>{r.type.replace(/_/g, ' ')}</b>
+                        {' '}
+                        <span style={badge(T.navy)}>Quality: N/A</span>
+                        {' '}
+                        <span style={badge(r.regulatoryApproved === 'APPROVED' ? '#147a3d' : r.regulatoryApproved === 'REJECTED' ? T.red : r.regulatoryApproved === 'PENDING' ? '#b26a00' : T.navy)}>
+                          Regulatory: {r.regulatoryApproved ?? 'N/A'}
+                        </span>
                         {r.bpClass && (
                           <span style={{ color: T.muted, fontSize: 12 }}>
                             {' '}
