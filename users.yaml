@@ -1,0 +1,20 @@
+# LifeGroup DataGent — user directory (no passwords; permissions only).
+# The users table in SQLite is synced from this file on every run.
+users:
+  - name: IT_team
+    email: vanadite111@gmail.com
+    title: IT support
+    roles: [it]
+  - name: Mike Bao
+    email: mbprojects2022@gmail.com
+    title: sales associate
+    roles: [requester]
+  - name: Mark Bosco
+    email: sendtomarkbosco@gmail.com
+    title: head of sales
+    roles: [approver]
+
+# Mark Bosco approves Mike Bao
+assignments:
+  - requester: mbprojects2022@gmail.com
+    approver: sendtomarkbosco@gmail.com
