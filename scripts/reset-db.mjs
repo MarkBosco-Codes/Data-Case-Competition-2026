@@ -11,6 +11,8 @@ const DB_PATH = path.join(process.cwd(), '.datagent.db')
 const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 
+const isRemote = process.argv.includes('--remote')
+
 const WIPE = [
   'request_approvals',
   'audit_events',
@@ -23,7 +25,42 @@ const WIPE = [
   'orders',
   'request_links',
   'api_requests',
+  ...(isRemote ? ['processed_emails'] : []),
 ]
+
+if (isRemote) {
+  console.log('Clearing remote Zoho inbox...')
+  try {
+    const key = process.env['zoho-inbox-key'] ?? process.env['ZOHO_INBOX_KEY']
+    const agent = (process.env['zoho-mailbox-name'] ?? process.env['ZOHO_MAILBOX_NAME'] ?? 'datagent-mailbox').trim()
+    const BASE = 'https://api.zohoagentinbox.com/api/v0.9'
+    let count = 0
+    if (key) {
+      while (true) {
+        const res = await fetch(`${BASE}/agents/${agent}/messages?limit=100`, {
+          headers: { Authorization: key },
+        })
+        const json = await res.json()
+        const msgs = Array.isArray(json.data) ? json.data : []
+        if (msgs.length === 0) break
+        for (const m of msgs) {
+          const id = m.messageId || m.id
+          if (!id) continue
+          const del = await fetch(`${BASE}/agents/${agent}/messages/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: key },
+          })
+          if (del.ok) count++
+        }
+      }
+      console.log(`purged ${count} remote email(s) from Zoho AgentInbox`)
+    } else {
+      console.log('zoho-inbox-key not found in environment, skipped Zoho remote purge')
+    }
+  } catch (err) {
+    console.error('Remote purge error:', err)
+  }
+}
 
 const KEEP = [
   'users', // user accounts + roles (synced from users.yaml)

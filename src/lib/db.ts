@@ -405,6 +405,18 @@ export function listUsers(): UserRow[] {
   ).map((u) => ({ ...u, roles: JSON.parse(u.roles) as string[] }))
 }
 
+export function getItApproverEmail(): string {
+  const users = listUsers()
+  const itUser = users.find((u) => u.roles.includes('it'))
+  return itUser?.email || 'mbprojects2022@gmail.com'
+}
+
+export function getRegulatoryApproverEmail(): string {
+  const users = listUsers()
+  const regUser = users.find((u) => u.roles.includes('regulatory'))
+  return regUser?.email || 'sendtomarkbosco@gmail.com'
+}
+
 export function upsertUser(email: string, roles: string[]): UserRow {
   const norm = email.trim().toLowerCase()
   const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(norm) as

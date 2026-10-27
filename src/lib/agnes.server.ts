@@ -109,7 +109,7 @@ If type is BUSINESS_PARTNER, also include:
   "countryOfOrigin", "addresses" (single string — the full address, required). Note: creditTerms and bankAccountNumber are filled in later by the user via form; ignore if missing in email.
 
 If type is PRODUCT, also include:
-  "code" (A/B/C or a new code), "name".
+  "code" (A/B/C or a new code), "name" (REQUIRED full product name, e.g. "MedicalScanner V2").
 
 If type is ORDER, also include:
   "orderNumber", "productCode", "partnerName" (customer or vendor name),

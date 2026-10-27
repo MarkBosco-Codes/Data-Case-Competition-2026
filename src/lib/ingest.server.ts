@@ -22,11 +22,12 @@ import {
   listProducts,
   listLinks,
   listUsers,
+  getItApproverEmail,
   insertApiRequest,
 } from '~/lib/db'
   import { findDuplicate, matchBonusField, deriveBonusName, template, isValidTaxFormat } from '~/lib/validation'
 import type { BusinessPartner } from '~/lib/types'
-import { listUnreadMessages, getMessageContent, sendReply, sendMail, resolveAgentName, mailboxEmail, markMessageRead } from './zoho.server'
+import { listUnreadMessages, getMessageContent, sendReply, sendMail, resolveAgentName, mailboxEmail, markMessageRead, type ZohoMessage } from './zoho.server'
 import { parseEmailToIntake } from './agnes.server'
 import { COUNTRIES } from '~/lib/constants'
 
@@ -42,6 +43,20 @@ export interface SyncResult {
 }
 
 const APP_URL = (process.env['APP_URL'] ?? process.env['VITE_APP_URL'] ?? 'http://localhost:3000').replace(/\/$/, '')
+
+function cleanEmailText(htmlOrText: string): string {
+  if (!htmlOrText) return ''
+  let cleaned = htmlOrText
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '\n')
+    .replace(/[\w\-.\#\s,:]+{[^}]*}/gi, '')
+  return cleaned
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join('\n')
+}
 
 function creditTermsOrDefault(v: any): any {
   const allowed = ['NET15', 'NET30', 'NET45', 'NET60', 'PREPAID']
@@ -59,57 +74,96 @@ function approvalTypeForProduct(name: string): 'QUALITY' | 'REGULATORY' {
   return MEDICAL_PRODUCT_RE.test(String(name ?? '')) ? 'REGULATORY' : 'QUALITY'
 }
 
+let isSyncRunning = false
+
 export async function syncInbox(): Promise<SyncResult> {
+  if (isSyncRunning) {
+    console.log('[datagent] sync already in progress, skipping concurrent run')
+    return {
+      ok: true,
+      agentName: getSyncState('zoho_agent_name') ?? null,
+      processed: 0,
+      skipped: 0,
+      errors: [],
+      lastSyncAt: new Date().toISOString(),
+      agnesLog: [],
+    }
+  }
+  isSyncRunning = true
+  try {
+    const resolved = await resolveAgentName()
+    console.log(`[datagent] sync starting for agent ${resolved.name ?? '(unresolved)'}`)
+    if (!resolved.name) {
+      const r: SyncResult = {
+        ok: false,
+        agentName: null,
+        processed: 0,
+        skipped: 0,
+        errors: [resolved.error ?? 'No working agent name'],
+        lastSyncAt: new Date().toISOString(),
+        tried: resolved.tried,
+        agnesLog: [],
+      }
+      setSyncState('last_sync_at', r.lastSyncAt)
+      setSyncState('last_sync_error', r.errors.join('; '))
+      return r
+    }
+
+    const listing = await listUnreadMessages(50)
+    console.log(`[datagent] fetched inbox for ${resolved.name}: ${listing.messages.length} unread message(s)`)
+    if (!listing.ok) {
+      const r: SyncResult = {
+        ok: false,
+        agentName: resolved.name,
+        processed: 0,
+        skipped: 0,
+        errors: [listing.error ?? 'Failed to list messages'],
+        lastSyncAt: new Date().toISOString(),
+        agnesLog: [],
+      }
+      setSyncState('last_sync_at', r.lastSyncAt)
+      setSyncState('last_sync_error', r.errors.join('; '))
+      return r
+    }
+
+    const { processed, skipped, errors, agnesLog } = await processMessages(listing.messages)
+
+    const result: SyncResult = {
+      ok: errors.length === 0,
+      agentName: resolved.name,
+      processed,
+      skipped,
+      errors,
+      lastSyncAt: new Date().toISOString(),
+      agnesLog,
+    }
+    setSyncState('last_sync_at', result.lastSyncAt)
+    setSyncState('last_sync_error', errors.join('; '))
+    return result
+  } finally {
+    isSyncRunning = false
+  }
+}
+
+export async function processMessages(messages: ZohoMessage[]): Promise<{ processed: number; skipped: number; errors: string[]; agnesLog: any[] }> {
   const errors: string[] = []
   let processed = 0
   let skipped = 0
   const agnesLog: { input: string; output: string }[] = []
 
-  const resolved = await resolveAgentName()
-  console.log(`[datagent] sync starting for agent ${resolved.name ?? '(unresolved)'}`)
-  if (!resolved.name) {
-    const r: SyncResult = {
-      ok: false,
-      agentName: null,
-      processed: 0,
-      skipped: 0,
-      errors: [resolved.error ?? 'No working agent name'],
-      lastSyncAt: new Date().toISOString(),
-      tried: resolved.tried,
-      agnesLog,
-    }
-    setSyncState('last_sync_at', r.lastSyncAt)
-    setSyncState('last_sync_error', r.errors.join('; '))
-    return r
-  }
-
-  const listing = await listUnreadMessages(50)
-  console.log(`[datagent] fetched inbox for ${resolved.name}: ${listing.messages.length} unread message(s)`)
-  if (!listing.ok) {
-    const r: SyncResult = {
-      ok: false,
-      agentName: resolved.name,
-      processed: 0,
-      skipped: 0,
-      errors: [listing.error ?? 'Failed to list messages'],
-      lastSyncAt: new Date().toISOString(),
-      agnesLog,
-    }
-    setSyncState('last_sync_at', r.lastSyncAt)
-    setSyncState('last_sync_error', r.errors.join('; '))
-    return r
-  }
-
-  for (const msg of listing.messages) {
+  for (const msg of messages) {
     if (isEmailProcessed(msg.messageId)) {
       skipped++
       continue
     }
     console.log(`[datagent] new message detected: ${msg.messageId} from ${msg.fromAddress || msg.sender} subject="${msg.subject}"`)
     try {
-      await markMessageRead(msg.messageId)
-      const content = await getMessageContent(msg.messageId)
-      const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      if (!msg.messageId.startsWith('test_')) {
+        await markMessageRead(msg.messageId)
+      }
+      const rawContent = msg.summary || msg.subject || ''
+      const content = !msg.messageId.startsWith('test_') ? await getMessageContent(msg.messageId) : rawContent
+      const textContent = cleanEmailText(content) || cleanEmailText(rawContent) || rawContent
       const fromEmail = (msg.fromAddress || msg.sender || '').trim().toLowerCase()
       const subject = msg.subject || '(no subject)'
       // Skip only the agent's own outbound mail if it lands in its own inbox.
@@ -117,7 +171,13 @@ export async function syncInbox(): Promise<SyncResult> {
       // open request, the reply is treated as a follow-up providing missing details
       // instead of a new request.
       const mbox = mailboxEmail()
-      if (!fromEmail || (mbox && fromEmail === mbox.toLowerCase())) {
+      const isSelf =
+        !fromEmail ||
+        (mbox && fromEmail === mbox.toLowerCase()) ||
+        fromEmail.includes('lg-datagent') ||
+        fromEmail.includes('agenzia.to') ||
+        fromEmail.includes('datagent')
+      if (isSelf) {
         console.log(`[datagent] skipping self-mail ${msg.messageId} (${subject})`)
         markEmailProcessed(msg.messageId, null, fromEmail, subject, !fromEmail ? 'NO_FROM' : 'SELF_REPLY')
         skipped++
@@ -130,15 +190,26 @@ export async function syncInbox(): Promise<SyncResult> {
 
       const fromAddress = mailboxEmail()
       const reply = async (body: string, subj?: string, to?: string) => {
-        console.log(`[datagent] sending reply to ${msg.messageId}:\n${body}`)
-        await sendReply({
+        const targetTo = (to || fromEmail || msg.fromAddress || msg.sender || '').trim()
+        const targetSubj = subj ?? (subject.toLowerCase().startsWith('re:') ? subject : `Re: ${subject}`)
+        console.log(`[datagent] sending reply to ${msg.messageId} (to: ${targetTo}, subj: ${targetSubj}):\n${body}`)
+        const replyRes = await sendReply({
           messageId: msg.messageId,
           fromAddress,
-          toAddress: to,
-          subject: subj ?? `Re: ${subject}`,
+          toAddress: targetTo,
+          subject: targetSubj,
           content: body,
           action: 'reply',
         })
+        if (!replyRes.ok) {
+          console.log(`[datagent] sendReply failed (${replyRes.error}), falling back to sendMail...`)
+          await sendMail({
+            fromAddress,
+            toAddress: targetTo,
+            subject: targetSubj,
+            content: body,
+          })
+        }
       }
       const approversFor = (requesterEmail: string): string[] => {
         const linked = listLinks()
@@ -166,9 +237,16 @@ export async function syncInbox(): Promise<SyncResult> {
         return approvers
       }
 
-      // ---- Follow-up: human reply ("Re: ...") on an open request updates it ----
+      // ---- Follow-up: human reply or email on an open request updates it ----
       const followupType = String(parsed?.type ?? '').toUpperCase()
-      const openRequest = /^re:/i.test(subject) ? getLatestPendingRequest(fromEmail) : undefined
+      const isReplyOrFollowup =
+        /^re:/i.test(subject) ||
+        /^fwd:/i.test(subject) ||
+        parsed?.intent === 'modify' ||
+        textContent.includes('---- On') ||
+        textContent.includes('From:')
+      const latestPending = getLatestPendingRequest(fromEmail)
+      const openRequest = isReplyOrFollowup || (latestPending && latestPending.status === 'IN_PROGRESS') ? latestPending : undefined
       if (openRequest && (!followupType || followupType === 'UNKNOWN' || followupType === openRequest.type)) {
         if (parsed?.requestReason && parsed.requestReason.trim() && parsed.requestReason.trim() !== (openRequest.requestReason ?? '')) {
           updateRequestReason(openRequest.id, parsed.requestReason.trim())
@@ -204,15 +282,20 @@ export async function syncInbox(): Promise<SyncResult> {
           const partner = oldName ? (listPartners() as any[]).find((p) => p.name === oldName) : undefined
           if (partner) updatePartnerRecord(partner.id, { ...payload })
           const missing: string[] = []
-          if (!String(payload.name ?? '').trim()) missing.push('Business-Partner name')
-          // Removed bank account and credit terms checks as they are now handled via the request page
+          if (!String(payload.name ?? '').trim()) missing.push('Contact Name')
           if (!String(payload.contactName ?? '').trim()) missing.push('Contact Name')
           if (!String(payload.contactEmail ?? '').trim()) missing.push('Contact Email')
           if (!String(payload.contactPhone ?? '').trim()) missing.push('Contact Phone')
           if (!payload.country || !(COUNTRIES as readonly string[]).includes(String(payload.country))) missing.push('Country')
           if (!String(addresses ?? '').trim()) missing.push('Address')
+          const curReason = openRequest.requestReason || parsed.requestReason || ''
+          if (!curReason || curReason === 'N/A' || !String(curReason).trim()) missing.push('Request reason')
+
+          const trackLink = makeViewLink(openRequest.id, ensureRequestLink(openRequest.id, fromEmail, false).secret)
+          const openName = String(payload.name ?? (openRequest.payload as any)?.name ?? 'your request').trim()
+
           if (missing.length) {
-            const body = `${bodyHead}Thanks — I've updated your business-partner request. Still missing:\n${missing.map((m) => `• ${m}`).join('\n')}\n\nPlease reply with the missing details.${bodyTail}`
+            const body = `Hi,\n\nYour business-partner request for "${openName}" has been created (Status: IN_PROGRESS).\n\nThese details must be provided before your request can be submitted:\n${missing.map((m) => `• ${m}`).join('\n')}\n\nPlease reply with the missing details, or track your request here:\n${trackLink}\n\nThanks,\nLifeGroup DataGent`
             await reply(body)
             recordEmail(openRequest.id, fromEmail, subject, body)
             markEmailProcessed(msg.messageId, openRequest.id, fromEmail, subject, 'STILL_MISSING')
@@ -220,9 +303,8 @@ export async function syncInbox(): Promise<SyncResult> {
             continue
           }
           appendAudit(openRequest.id, fromEmail, 'UPDATED', `Follow-up email ${msg.messageId} — details updated`)
-          const trackLink = makeViewLink(openRequest.id, ensureRequestLink(openRequest.id, fromEmail, false).secret)
           if (openRequest.status === 'IN_PROGRESS') {
-            const body = `${bodyHead}Thanks — I've updated your business-partner request for ${payload.name} (Status: IN_PROGRESS).\n\nPlease complete your request by filling in your Bank Account Number and Credit Terms using your link below:\n${trackLink}\n\nOnce submitted, your request will be routed for approval.\n\nThanks,\nLifeGroup DataGent`
+            const body = `Hi,\n\nYour business-partner request for ${payload.name} has been updated (Status: IN_PROGRESS).\n\nPlease complete your request using your tracking link below:\n${trackLink}\n\nOnce submitted, your request will be routed for approval.\n\nThanks,\nLifeGroup DataGent`
             await reply(body)
             recordEmail(openRequest.id, fromEmail, subject, body)
             markEmailProcessed(msg.messageId, openRequest.id, fromEmail, subject, 'FOLLOW_UP')
@@ -298,8 +380,8 @@ export async function syncInbox(): Promise<SyncResult> {
         delete proposed.notes
         const businessApprovers = approversFor(fromEmail)
         const requiredApprovers = [...businessApprovers]
-        if (parsed?.notes && deriveBonusName(String(parsed.notes)) && !requiredApprovers.includes('vanadite111@gmail.com')) {
-          requiredApprovers.push('vanadite111@gmail.com')
+        if (parsed?.notes && deriveBonusName(String(parsed.notes)) && !requiredApprovers.includes(getItApproverEmail())) {
+          requiredApprovers.push(getItApproverEmail())
         }
         const changeApprovalType = changeType === 'PRODUCT' ? approvalTypeForProduct(String(parsed?.name ?? '')) : 'QUALITY'
         const payload: any = {
@@ -359,7 +441,7 @@ export async function syncInbox(): Promise<SyncResult> {
         type === 'BUSINESS_PARTNER' ? 'businessPartner' : type === 'PRODUCT' ? 'product' : 'order'
 
       // Reason is mandatory for every request
-      if (!reason) {
+      if (!reason && type !== 'BUSINESS_PARTNER') {
         await reply(
           `Hi,\n\nA reason for your request is required before I can create it. Please reply to this email with your request details plus a short reason (e.g. "Reason: onboarding new supplier for Q3"), and I'll process it.\n\nThanks,\nLifeGroup DataGent`,
         )
@@ -371,27 +453,22 @@ export async function syncInbox(): Promise<SyncResult> {
       // ---- BUSINESS_PARTNER ----
       if (type === 'BUSINESS_PARTNER') {
         const name = String(parsed.name ?? '').trim()
+        if (!name) {
+          await reply(
+            `Hi,\n\nPlease reply with the business-partner name and details so I can create your request.\n\nThanks,\nLifeGroup DataGent`,
+          )
+          markEmailProcessed(msg.messageId, null, fromEmail, subject, 'MISSING_NAME')
+          processed++
+          continue
+        }
+
+        const country = (parsed.country as any) || COUNTRIES[0]
+        const partnerClass = parsed.partnerClass === 'Supplier' ? 'Supplier' : 'Customer'
         const rawAddr = parsed.addresses
         const parsedAddresses: string = typeof rawAddr === 'string'
           ? rawAddr.trim()
           : [rawAddr?.registered, rawAddr?.office, rawAddr?.correspondence].filter((v) => String(v ?? '').trim()).join('; ').trim()
-        const missing: string[] = []
-        if (!name) missing.push('Business-Partner name')
-        if (!String(parsed.contactName ?? '').trim()) missing.push('Contact Name')
-        if (!String(parsed.contactEmail ?? '').trim()) missing.push('Contact Email')
-        if (!String(parsed.contactPhone ?? '').trim()) missing.push('Contact Phone')
-        if (!parsed.country || !(COUNTRIES as readonly string[]).includes(String(parsed.country))) missing.push('Country')
-        if (!parsedAddresses) missing.push('Address')
-        if (missing.length) {
-          await reply(
-            `Hi,\n\nThese details must be filled in before I can create the request:\n${missing.map((m) => `• ${m}`).join('\n')}\n\nPlease reply with the missing details.\n\nThanks,\nLifeGroup DataGent`,
-          )
-          markEmailProcessed(msg.messageId, null, fromEmail, subject, 'MISSING_DETAILS')
-          processed++
-          continue
-        }
-        const country = (parsed.country as any) || COUNTRIES[0]
-        const partnerClass = parsed.partnerClass === 'Supplier' ? 'Supplier' : 'Customer'
+
         const existing = listPartners()
         const dupe = findDuplicate(existing as any, {
           name,
@@ -413,9 +490,27 @@ export async function syncInbox(): Promise<SyncResult> {
           continue
         }
 
+        const missing: string[] = []
+        if (!String(parsed.contactName ?? '').trim()) missing.push('Contact Name')
+        if (!String(parsed.contactEmail ?? '').trim()) missing.push('Contact Email')
+        if (!String(parsed.contactPhone ?? '').trim()) missing.push('Contact Phone')
+        if (!parsed.country || !(COUNTRIES as readonly string[]).includes(String(parsed.country))) missing.push('Country')
+        if (!parsedAddresses) missing.push('Address')
+        if (!reason || reason === 'N/A' || !String(parsed.requestReason ?? '').trim()) missing.push('Request reason')
+
+        if (missing.length > 0) {
+          const listStr = missing.map((m) => `• ${m}`).join('\n')
+          await reply(
+            `Hi,\n\nYour business-partner request for "${name}" requires additional details before it can be created.\n\nThese details must be provided before your request can be created:\n${listStr}\n\nPlease reply with the missing details.\n\nThanks,\nLifeGroup DataGent`,
+          )
+          markEmailProcessed(msg.messageId, null, fromEmail, subject, 'MISSING_DETAILS')
+          processed++
+          continue
+        }
+
         const initialBank = parsed.bankAccountNumber ? String(parsed.bankAccountNumber).trim() : null
         const initialCredit = parsed.creditTerms ? creditTermsOrDefault(parsed.creditTerms) : null
-        const isComplete = !!(initialBank && initialCredit)
+        const isComplete = !missing.length && !!(initialBank && initialCredit)
 
         const bp: BusinessPartner = {
           id: crypto.randomUUID(),
@@ -445,11 +540,11 @@ export async function syncInbox(): Promise<SyncResult> {
           matchedBonus = matchBonusField(fields, notes)
         }
         const derivedNewField = !matchedBonus && !!deriveBonusName(notes)
-        const needsItConfig = derivedNewField
+        const needsItConfig = !!matchedBonus || derivedNewField || !!(notes && notes.trim())
         const businessApprovers = approversFor(fromEmail)
         const requiredApprovers = [...businessApprovers]
-        if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
-          requiredApprovers.push('vanadite111@gmail.com')
+        if (needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+          requiredApprovers.push(getItApproverEmail())
         }
         const initialStatus = isComplete ? 'PENDING_APPROVAL' : 'IN_PROGRESS'
         const request = insertRequest({
@@ -460,12 +555,10 @@ export async function syncInbox(): Promise<SyncResult> {
           status: initialStatus,
           payload: {
             name: bp.name,
-            creditTerms: initialCredit,
-            bankAccountNumber: initialBank,
+            partnerClass: bp.partnerClass,
             contactName: bp.contactName,
             contactEmail: bp.contactEmail,
             contactPhone: bp.contactPhone,
-            partnerClass: bp.partnerClass,
             country: bp.country,
             countryOfOrigin: bp.countryOfOrigin,
             addresses: bp.addresses,
@@ -473,8 +566,6 @@ export async function syncInbox(): Promise<SyncResult> {
           },
           needsItConfig,
           approvalType: 'QUALITY',
-          qualityApproved: 'N/A',
-          regulatoryApproved: 'N/A',
           requestReason: reason,
           bonusText: notes,
         })
@@ -483,14 +574,21 @@ export async function syncInbox(): Promise<SyncResult> {
           const derived = deriveBonusName(notes)
           if (derived) {
             const nf: any = addBonusField('businessPartner', derived)
-            if (nf) {
-              setBonusValue(request.id, nf.id, notes.slice(0, 200))
-            }
+            if (nf) setBonusValue(request.id, nf.id, notes.slice(0, 200))
           }
         }
-        const wire = template({ request_id: request.id, process_status: request.status, custom_data: bp.customData })
+        const wire = template({ request_id: request.id, process_status: request.status, custom_data: {} })
         appendAudit(request.id, fromEmail || 'agent', 'SUBMITTED', `Ingested from email ${msg.messageId} — Request reason: ${reason}`)
         const trackLink = makeViewLink(request.id, ensureRequestLink(request.id, fromEmail || 'unknown@unknown', false).secret)
+
+        if (missing.length) {
+          const body = `Hi,\n\nYour business-partner request for "${name}" has been created (Status: IN_PROGRESS).\n\nThese details must be provided before your request can be submitted:\n${missing.map((m) => `• ${m}`).join('\n')}\n\nPlease reply with the missing details, or track your request here:\n${trackLink}\n\nThanks,\nLifeGroup DataGent`
+          await reply(body)
+          recordEmail(request.id, fromEmail, `Re: ${subject}`, body)
+          markEmailProcessed(msg.messageId, request.id, fromEmail, subject, 'MISSING_DETAILS')
+          processed++
+          continue
+        }
         
         let requesterBody = ''
         if (isComplete) {
@@ -500,7 +598,7 @@ export async function syncInbox(): Promise<SyncResult> {
           await notifyApprovers(request.id, wire, 'business-partner', `Name: ${bp.name}\nPartner class: ${bp.partnerClass} (${bp.partnerClassDb})\nCountry: ${bp.country}\nRequest reason: ${reason}`, `Approval needed: New ${bp.partnerClass} ${bp.name}`, requiredApprovers)
           insertApiRequest(request.id, wire)
         } else {
-          requesterBody = `Hi,\n\nYour business-partner request for ${bp.name} has been created (Status: IN_PROGRESS).\n\nPlease complete your request by filling in your Bank Account Number and Credit Terms using your link below:\n${trackLink}\n\nOnce submitted, your request will be routed for approval.\n\nThanks,\nLifeGroup DataGent`
+          requesterBody = `Hi,\n\nYour business-partner request for ${bp.name} has been created (Status: IN_PROGRESS).\n\nPlease complete your request using your tracking link below:\n${trackLink}\n\nOnce submitted, your request will be routed for approval.\n\nThanks,\nLifeGroup DataGent`
           await reply(requesterBody)
           recordEmail(request.id, fromEmail, `Re: ${subject}`, requesterBody)
         }
@@ -512,16 +610,25 @@ export async function syncInbox(): Promise<SyncResult> {
 
       // ---- PRODUCT ----
       if (type === 'PRODUCT') {
-        const pname = String(parsed.name ?? '').trim()
+        let pname = String(parsed.name ?? '').trim()
+        if (!pname) {
+          const nameMatch = textContent.match(/(?:add|new)\s+product\s+([^\.\,\;\n\r]+)/i) || subject.match(/(?:add|new)\s+product\s+([^\.\,\;\n\r]+)/i)
+          if (nameMatch && nameMatch[1]) {
+            pname = nameMatch[1].trim()
+          }
+        }
         if (!pname) {
           await reply(`Hi,\n\nMissing product name. Please reply with product name (and code if known).\n\nThanks,\nLifeGroup DataGent`)
           markEmailProcessed(msg.messageId, null, fromEmail, subject, 'MISSING_PRODUCT_NAME')
           processed++
           continue
         }
-        const code = String(parsed.code ?? '').trim() || `P${Date.now().toString(36).toUpperCase()}`
-        // duplicate code check
+        let code = String(parsed.code ?? '').trim()
         const existing = listProducts() as any[]
+        const hasExplicitCode = !!textContent.match(/code[:\s]+([A-Z0-9_\-]+)/i)
+        if (!code || (existing.some((p) => p.code === code) && !hasExplicitCode)) {
+          code = `P${Date.now().toString(36).toUpperCase()}`
+        }
         if (existing.some((p) => p.code === code)) {
           await reply(`Hi,\n\nProduct code "${code}" already exists. Please choose a different code.\n\nThanks,\nLifeGroup DataGent`)
           markEmailProcessed(msg.messageId, null, fromEmail, subject, 'DUPLICATE_PRODUCT')
@@ -536,6 +643,7 @@ export async function syncInbox(): Promise<SyncResult> {
           matchedBonus = matchBonusField(fields, notes)
         }
         const derivedNewField = !matchedBonus && !!deriveBonusName(notes)
+        const needsItConfig = !!matchedBonus || derivedNewField || !!(notes && notes.trim())
         const approvalType = approvalTypeForProduct(pname)
         const businessApprovers = approversFor(fromEmail)
         const requiredApprovers = [...businessApprovers]
@@ -546,8 +654,8 @@ export async function syncInbox(): Promise<SyncResult> {
             }
           }
         }
-        if (derivedNewField && !requiredApprovers.includes('vanadite111@gmail.com')) {
-          requiredApprovers.push('vanadite111@gmail.com')
+        if (needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+          requiredApprovers.push(getItApproverEmail())
         }
         const request = insertRequest({
           threadId: msg.messageId,
@@ -556,7 +664,7 @@ export async function syncInbox(): Promise<SyncResult> {
           requesterEmail: fromEmail || 'unknown@unknown',
           status: 'PENDING_APPROVAL',
           payload: { code, name: pname, approvers: requiredApprovers },
-          needsItConfig: derivedNewField,
+          needsItConfig,
           approvalType,
           requestReason: reason,
           bonusText: notes,
@@ -621,10 +729,11 @@ export async function syncInbox(): Promise<SyncResult> {
           matchedBonus = matchBonusField(fields, notes)
         }
         const derivedNewField = !matchedBonus && !!deriveBonusName(notes)
+        const needsItConfig = !!matchedBonus || derivedNewField || !!(notes && notes.trim())
         const businessApprovers = approversFor(fromEmail)
         const requiredApprovers = [...businessApprovers]
-        if (derivedNewField && !requiredApprovers.includes('vanadite111@gmail.com')) {
-          requiredApprovers.push('vanadite111@gmail.com')
+        if (needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+          requiredApprovers.push(getItApproverEmail())
         }
         const request = insertRequest({
           threadId: msg.messageId,
@@ -633,7 +742,7 @@ export async function syncInbox(): Promise<SyncResult> {
           requesterEmail: fromEmail || 'unknown@unknown',
           status: 'PENDING_APPROVAL',
           payload: { orderNumber, productCode, partnerName, partnerId, qty, paymentDate, deliveryDate, approvers: requiredApprovers },
-          needsItConfig: derivedNewField,
+          needsItConfig,
           approvalType: 'QUALITY',
           requestReason: reason,
           bonusText: notes,
@@ -670,22 +779,10 @@ export async function syncInbox(): Promise<SyncResult> {
     }
   }
 
-  const lastSyncAt = new Date().toISOString()
-  setSyncState('last_sync_at', lastSyncAt)
-  setSyncState('last_sync_error', errors.join('; '))
-  setSyncState('last_sync_processed', String(processed))
-  if (agnesLog.length > 0) {
-    const last = agnesLog[agnesLog.length - 1]
-    setSyncState('last_agnes_input', last.input)
-    setSyncState('last_agnes_output', last.output)
-  }
   return {
-    ok: errors.length === 0,
-    agentName: resolved.name,
     processed,
     skipped,
     errors,
-    lastSyncAt,
     agnesLog,
   }
 }

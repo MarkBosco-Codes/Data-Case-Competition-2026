@@ -195,4 +195,35 @@ export async function markMessageRead(messageId: string): Promise<{ ok: boolean;
   return { ok: true }
 }
 
+export async function deleteMessage(messageId: string): Promise<{ ok: boolean; error?: string }> {
+  const resolved = await resolveAgentName()
+  if (!resolved.name) return { ok: false, error: resolved.error }
+  const r = await zohoFetch(`/agents/${resolved.name}/messages/${messageId}`, {
+    method: 'DELETE',
+  })
+  const code = r.body?.status?.code ?? r.status
+  if (!r.ok || (code !== 200 && code !== undefined)) {
+    return { ok: false, error: r.body?.status?.description ?? r.text }
+  }
+  return { ok: true }
+}
+
+export async function purgeRemoteEmails(): Promise<{ ok: boolean; count: number; error?: string }> {
+  const resolved = await resolveAgentName()
+  if (!resolved.name) return { ok: false, count: 0, error: resolved.error }
+  let count = 0
+  while (true) {
+    const r = await zohoFetch(`/agents/${resolved.name}/messages?limit=100`)
+    const data = Array.isArray(r.body?.data) ? r.body.data : []
+    if (data.length === 0) break
+    for (const m of data) {
+      const id = String(m.messageId ?? m.id ?? '')
+      if (!id) continue
+      const res = await deleteMessage(id)
+      if (res.ok) count++
+    }
+  }
+  return { ok: true, count }
+}
+
 export { isEmailProcessed, markEmailProcessed }

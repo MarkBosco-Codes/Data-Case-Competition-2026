@@ -214,14 +214,14 @@ export function RequestPage({ initial, requestId, secret }: Props) {
       const clean = raw.replace(/\s*\(regulatory\)/i, '')
       return `${clean} (regulatory)`
     }
-    if (email === 'vanadite111@gmail.com' || raw.toLowerCase().includes('it')) {
+    if (email === 'mbprojects2022@gmail.com' || email === 'vanadite111@gmail.com' || raw.toLowerCase().includes('it')) {
       const clean = raw.replace(/\s*\(it\)/i, '')
       return `${clean} (IT)`
     }
     return raw
   }
 
-  const itApproval = approvals.find((a) => a.approverEmail === 'vanadite111@gmail.com')
+  const itApproval = approvals.find((a) => a.approverEmail === 'mbprojects2022@gmail.com' || a.approverEmail === 'vanadite111@gmail.com')
   const itStatus = itApproval ? itApproval.decision : 'PENDING'
 
   const requesterName = userNames[request.requesterEmail] ?? request.requesterEmail

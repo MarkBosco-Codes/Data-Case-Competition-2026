@@ -25,6 +25,7 @@ import {
   listProducts,
   listRequests,
   listUsers,
+  getItApproverEmail,
   markPartnersPushed,
   recordApproval,
   recordEmail,
@@ -54,7 +55,7 @@ import { BP_TYPE_REQUIREMENTS, COUNTRIES } from '~/lib/constants'
 import { syncInbox } from '~/lib/ingest.server'
 import { resolveAgentName, listUnreadMessages, sendMail, mailboxEmail } from '~/lib/zoho.server'
 const APP_URL = (process.env['APP_URL'] ?? process.env['VITE_APP_URL'] ?? 'http://localhost:3000').replace(/\/$/, '')
-import { getSyncState } from '~/lib/db'
+import { getSyncState, setSyncState } from '~/lib/db'
 import type { BusinessPartner, Schema } from '~/lib/types'
 
 // ---- Access helpers (Sprint 1: role-based request tracking) ------------------
@@ -185,8 +186,8 @@ export const submitBpIntake = createServerFn({ method: 'POST' })
       ? businessApprovers
       : (listUsers() as any[]).filter((u) => (u.roles || []).includes('approver')).map((u) => u.email)
     const requiredApprovers = [...approverList]
-    if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
-      requiredApprovers.push('vanadite111@gmail.com')
+    if (needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+      requiredApprovers.push(getItApproverEmail())
     }
 
     // Agentic MDM request: 1 email thread = 1 conversation context = 1 request
@@ -302,8 +303,8 @@ export const submitBpDetails = createServerFn({ method: 'POST' })
     }
 
     const needsItConfig = !!req.needsItConfig
-    if (needsItConfig && !requiredApprovers.includes('vanadite111@gmail.com')) {
-      requiredApprovers.push('vanadite111@gmail.com')
+    if (needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+      requiredApprovers.push(getItApproverEmail())
     }
 
     const updatedPayload = {
@@ -339,12 +340,12 @@ export const submitBpDetails = createServerFn({ method: 'POST' })
     const wire = template({
       request_id: req.id,
       process_status: 'PENDING_APPROVAL',
-      custom_data: { name: partnerName, bankAccountNumber, creditTerms },
+      custom_data: { name: partnerName },
     })
 
     const subjectPrefix = approvalType === 'REGULATORY' ? 'Regulatory review — ' : 'Quality review — '
     const subject = `Approval needed: ${subjectPrefix}New ${req.bpClass ?? 'Partner'} ${partnerName}`
-    const detailText = `Name: ${partnerName}\nPartner class: ${req.bpClass}\nBank Account: ${bankAccountNumber}\nCredit Terms: ${creditTerms}\nRequest reason: ${req.requestReason ?? 'N/A'}`
+    const detailText = `Name: ${partnerName}\nPartner class: ${req.bpClass}\nRequest reason: ${req.requestReason ?? 'N/A'}`
 
     for (const approverEmail of requiredApprovers) {
       const appLink = ensureRequestLink(req.id, approverEmail, true)
@@ -709,5 +710,124 @@ export const pushLegacyPartners = createServerFn({ method: 'POST' })
       }),
     }
   })
+
+// ---- Approver Reminders ---------------------------------------------------
+
+export const getReminderSettingsFn = createServerFn({ method: 'GET' }).handler(async () => {
+  const daysStr = getSyncState('reminder_frequency_days')
+  const days = daysStr ? parseInt(daysStr, 10) : 3
+  const lastPushedAt = getSyncState('last_reminder_pushed_at')
+  return { days: isNaN(days) ? 3 : days, lastPushedAt }
+})
+
+export const setReminderDaysFn = createServerFn({ method: 'POST' })
+  .validator((data: { days: number }) => data)
+  .handler(async ({ data }) => {
+    const d = Math.max(1, Math.min(365, data.days || 3))
+    setSyncState('reminder_frequency_days', String(d))
+    return { ok: true, days: d }
+  })
+
+export const pushRemindersNowFn = createServerFn({ method: 'POST' }).handler(async () => {
+  const requests = listRequests() as any[]
+  const users = listUsers() as any[]
+  const userMap: Record<string, string> = {}
+  for (const u of users) userMap[u.email] = u.name ?? u.email
+
+  const pendingRequests = requests.filter((r) => r.status === 'PENDING_APPROVAL')
+
+  const approverOutstanding: Record<
+    string,
+    Array<{ id: string; type: string; requesterEmail: string; requesterName: string; link: string }>
+  > = {}
+
+  for (const req of pendingRequests) {
+    let payload: any = {}
+    try {
+      payload = typeof req.payload === 'string' ? JSON.parse(req.payload) : (req.payload ?? {})
+    } catch {
+      payload = {}
+    }
+    const requiredApprovers: string[] =
+      Array.isArray(payload.approvers) && payload.approvers.length
+        ? payload.approvers
+        : ['sendtomarkbosco@gmail.com']
+
+    if (req.needsItConfig && !requiredApprovers.includes(getItApproverEmail())) {
+      requiredApprovers.push(getItApproverEmail())
+    }
+
+    const existingApprovals = listApprovals(req.id)
+
+    for (const approverEmail of requiredApprovers) {
+      const alreadyDecided = existingApprovals.some((a) => a.approverEmail === approverEmail)
+      if (!alreadyDecided) {
+        if (!approverOutstanding[approverEmail]) approverOutstanding[approverEmail] = []
+        const linkRow = ensureRequestLink(req.id, approverEmail, true)
+        const approveLink = `${APP_URL}/r/${req.id}/${linkRow.secret}`
+        const requesterName = userMap[req.requesterEmail] ?? req.requesterEmail
+        approverOutstanding[approverEmail].push({
+          id: req.id,
+          type: req.type,
+          requesterEmail: req.requesterEmail,
+          requesterName,
+          link: approveLink,
+        })
+      }
+    }
+  }
+
+  const approverEmails = Object.keys(approverOutstanding)
+  if (approverEmails.length === 0) {
+    const now = new Date().toISOString()
+    setSyncState('last_reminder_pushed_at', now)
+    return { ok: true, sentCount: 0, approversNotified: [], message: 'No pending approvals outstanding for any approver.' }
+  }
+
+  const fromAddress = mailboxEmail()
+  let sentCount = 0
+  const notified: string[] = []
+
+  for (const approverEmail of approverEmails) {
+    const items = approverOutstanding[approverEmail]
+    const count = items.length
+    if (count === 0) continue
+
+    const listLines = items
+      .map(
+        (it) =>
+          `• ${it.type.replace(/_/g, ' ')} — Requested by ${it.requesterName} (${it.requesterEmail})\n  Approve link: ${it.link}`,
+      )
+      .join('\n\n')
+
+    const subject = `Reminder: You have ${count} outstanding request${count > 1 ? 's' : ''} to approve`
+    const body = `Hi,\n\nYou have ${count} outstanding request${count > 1 ? 's' : ''} awaiting your approval:\n\n${listLines}\n\nThanks,\nLifeGroup DataGent`
+
+    const mailRes = await sendMail({
+      fromAddress,
+      toAddress: approverEmail,
+      subject,
+      content: body,
+    })
+
+    for (const item of items) {
+      recordEmail(item.id, approverEmail, subject, body)
+      appendAudit(item.id, 'system', 'REMINDER_SENT', `Sent approval reminder email to ${approverEmail}`)
+    }
+
+    sentCount += count
+    notified.push(approverEmail)
+  }
+
+  const now = new Date().toISOString()
+  setSyncState('last_reminder_pushed_at', now)
+
+  return {
+    ok: true,
+    sentCount,
+    approversNotified: notified,
+    message: `Successfully sent reminders to ${notified.length} approver(s) (${sentCount} outstanding request(s) total).`,
+  }
+})
 
 export type { Schema }

@@ -1,6 +1,45 @@
-# Test emails to send as requestor (mbprojects2022@gmail.com)
+# Test Emails to Send as Requester (mbprojects2022@gmail.com)
 
-Send each email to the Zoho agent inbox the app polls. Wait ~5-10s for processing, then check `/` and the track link in the reply.
+Send each email to the Zoho agent inbox the app polls (`lg-datagent2@agenzia.to`). Wait ~5-10s for processing, then check `/` and the track link in the reply.
+
+---
+
+## 📦 1. Sample Product Creation Email
+**Subject:** `New product MedicalScanner V2`  
+**Body:**
+```
+Please add a new product.
+Name: MedicalScanner V3
+Code: MSV3
+Add a field colour: orange
+Request reason: New SKU launch for Q2 hospital sales
+```
+*Expected Result:*
+- Product request created (`status = PENDING_APPROVAL`).
+- `Regulatory: PENDING` (medical product) and `IT: PENDING` (`colour` is a custom field).
+- Approvers: `Mark Bosco (regulatory)` and `IT_team (IT)`.
+
+---
+
+## 🛒 2. Sample Order Creation Email
+**Subject:** `New order ORD-2026-88`  
+**Body:**
+```
+Please create a new order.
+Order number: ORD-2026-88
+Product code: MSV3
+Partner name: Vietnam Trading Co
+Quantity: 50
+Payment date: 2026-11-15
+Delivery date: 2026-11-01
+Request reason: Initial stock order for hospital client
+```
+*Expected Result:*
+- Order request created (`status = PENDING_APPROVAL`).
+- `Quality: N/A`, `Regulatory: N/A`, and `IT: PENDING` (`packaging` is a custom field).
+- Approvers: `Mark Bosco (regulatory)` and `IT_team (IT)`.
+
+---
 
 ## 1. Business Partner — complete (happy path)
 Subject: New customer Vietnam Trading Co
@@ -184,7 +223,7 @@ Requester link must show ", view-only" suffix and no Approve/Reject buttons (Can
 
 ## 21. IT approval on new-field requests
 Create a BP/PRODUCT/ORDER request that introduces a new bonus field (or triggers needsItConfig). Expect:
-- Approver email list includes IT (`vanadite111@gmail.com`) alongside the business approver, each with a single review-and-approve link.
+- Approver email list includes IT (`mbprojects2022@gmail.com`) alongside the business approver, each with a single review-and-approve link.
 - Approvals table on the magic-link page shows both approvers with `PENDING` status from the start.
 - Request stays `PENDING_APPROVAL` after only the business approver approves; it becomes `CREATED_IN_MDM` once IT also approves. IT receives the same notification email.
 
