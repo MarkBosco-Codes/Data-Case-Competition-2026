@@ -8,6 +8,7 @@ Run from the repo folder:   streamlit run analytics/src/regional_view.py
 """
 
 import sqlite3
+from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -176,6 +177,39 @@ def datagent_requests():
                            "FROM requests GROUP BY type, status", connection)
 
 
+def excel_export(series, forecasts):
+    """A summary workbook the commercial team can use for their own projections.
+    Country totals only: no customer names, contacts, bank details or credit terms."""
+    months = list(series.index)
+    monthly = (series.stack(["country", "product"], future_stack=True).rename("Units ordered")
+               .reset_index().rename(columns={"month": "Month", "country": "Country", "product": "Product"}))
+    growth = growth_table(series).round(1)
+    forecast = next_quarter(series, forecasts).round(0)
+    read_me = pd.DataFrame([
+        ("Data", "SYNTHETIC: generated with planted patterns. Not real Lives Group results."),
+        ("Monthly orders", f"Units ordered per month, country and product, {months[0]} to {months[-1]}. "
+                           "One row each, ready for a PivotTable."),
+        ("Growth", f"Growth % = (units {months[-12]} to {months[-1]} − units in the 12 months before) "
+                   "÷ units in the 12 months before. 'Within noise' = could be chance."),
+        ("Forecast", "Next 3 months from the calendar regression (holidays, budget year-end, rainy "
+                     "season). In testing, actual orders landed inside the Low–High range about 80% of the time."),
+        ("Left out on purpose", "Customer names, contacts, bank details and credit terms. "
+                                "MDM setup requests are not orders, so they are not included."),
+    ], columns=["Sheet / topic", "What it means"])
+
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        read_me.to_excel(writer, sheet_name="Read me", index=False)
+        monthly.to_excel(writer, sheet_name="Monthly orders", index=False)
+        growth.to_excel(writer, sheet_name="Growth", index=False)
+        forecast.to_excel(writer, sheet_name="Forecast next 3 months", index=False)
+        for sheet in writer.sheets.values():  # widen each column to fit its longest entry
+            for column in sheet.columns:
+                width = max(len(str(cell.value)) for cell in column)
+                sheet.column_dimensions[column[0].column_letter].width = min(width + 2, 100)
+    return buffer.getvalue()
+
+
 # ---------------------------------------------------------------------------
 # Page
 # ---------------------------------------------------------------------------
@@ -189,6 +223,12 @@ period = f"{months[-12]} to {months[-1]}"
 st.title("Lives Group: regional business view")
 st.warning("**Synthetic data.** Orders, customers and requests are generated with planted patterns "
            "to test the methods. The numbers are not real Lives Group results.")
+st.download_button(
+    "Download summary for Excel", data=excel_export(series, data["forecasts"]),
+    file_name="lives_group_regional_summary.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    help="Monthly orders, growth and the 3-month forecast by country and product, for the "
+         "commercial team's own projections. No customer names, bank details or credit terms.")
 
 business, admin, forecast_tab, actions = st.tabs(
     ["Business: orders", "Administrative: MDM requests", "Forecast", "Actions"])

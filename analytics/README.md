@@ -14,6 +14,10 @@ It opens in your browser with 4 tabs:
 - **Forecast:** which forecast method works best, and the next 3 months
 - **Actions:** duplicate customers, who sales should call, and what to do
 
+The **Download summary for Excel** button at the top gives the commercial team monthly
+orders, growth and the 3-month forecast by country and product. Nothing sensitive:
+no customer names, bank details or credit terms.
+
 ## Main results (fake data)
 - Using the holiday and budget calendar makes forecast misses about 19% smaller for
   reagents (A) and 28% smaller for equipment (B) than today's 6-month average.
