@@ -32,6 +32,7 @@ no customer names, bank details or credit terms.
 |---|---|
 | `src/make_synthetic_data.py` | Makes 3 years of fake orders for 50 customers in 5 countries |
 | `src/setup_requests.py` | Makes fake requests for new records |
+| `src/mock_usage.py` | Fills the DataGent app's database with 4 weeks of fake usage for the demo (`--undo` removes it) |
 | `src/backtest.py` | Tests 11 forecast methods on 12 months they have not seen |
 | `src/stress_test.py` | Repeats the test in 6 harder fake worlds |
 | `src/stress_test_v2.py` | Round 2: 5 more worlds with Lives Group patterns, plus checks on customer alerts |
