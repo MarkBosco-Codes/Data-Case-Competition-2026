@@ -1,0 +1,256 @@
+scenario,seed,check,measure,value,note
+S0 Baseline,101,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S0 Baseline,101,1 Drop-off alerts,Current rule: alerts raised,3.0,one alert = one customer-product
+S0 Baseline,101,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,101,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S0 Baseline,101,1 Drop-off alerts,Current rule: fading customers caught,2.0,of 4
+S0 Baseline,101,1 Drop-off alerts,Stock-up-aware rule: alerts raised,3.0,one alert = one customer-product
+S0 Baseline,101,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,101,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S0 Baseline,101,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,2.0,of 4
+S0 Baseline,101,2 Outbreak warning,False alarms (warnings with no outbreak),11.0,
+S0 Baseline,101,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S0 Baseline,101,3 Equipment lead,Correlation: B 3-month vs A next month,-0.074,5 countries x 24 months
+S0 Baseline,101,3 Equipment lead,Analyser installations planted,0.0,
+S0 Baseline,202,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S0 Baseline,202,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S0 Baseline,202,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,202,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S0 Baseline,202,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S0 Baseline,202,1 Drop-off alerts,Stock-up-aware rule: alerts raised,8.0,one alert = one customer-product
+S0 Baseline,202,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,202,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S0 Baseline,202,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S0 Baseline,202,2 Outbreak warning,False alarms (warnings with no outbreak),14.0,
+S0 Baseline,202,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S0 Baseline,202,3 Equipment lead,Correlation: B 3-month vs A next month,-0.108,5 countries x 24 months
+S0 Baseline,202,3 Equipment lead,Analyser installations planted,0.0,
+S0 Baseline,303,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S0 Baseline,303,1 Drop-off alerts,Current rule: alerts raised,6.0,one alert = one customer-product
+S0 Baseline,303,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,303,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S0 Baseline,303,1 Drop-off alerts,Current rule: fading customers caught,4.0,of 4
+S0 Baseline,303,1 Drop-off alerts,Stock-up-aware rule: alerts raised,6.0,one alert = one customer-product
+S0 Baseline,303,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S0 Baseline,303,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S0 Baseline,303,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,4.0,of 4
+S0 Baseline,303,2 Outbreak warning,False alarms (warnings with no outbreak),16.0,
+S0 Baseline,303,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S0 Baseline,303,3 Equipment lead,Correlation: B 3-month vs A next month,-0.067,5 countries x 24 months
+S0 Baseline,303,3 Equipment lead,Analyser installations planted,0.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,Current rule: alerts raised,5.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,Stock-up-aware rule: alerts raised,4.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S6 Outbreaks + stock-ups,101,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,101,2 Outbreak warning,Months to first warning,,"Indonesia, starts 2024-08: not scored (needs 12 months of history)"
+S6 Outbreaks + stock-ups,101,2 Outbreak warning,Months to first warning,0.0,"Vietnam, starts 2025-07"
+S6 Outbreaks + stock-ups,101,2 Outbreak warning,Months to first warning,1.0,"Vietnam, starts 2026-04"
+S6 Outbreaks + stock-ups,101,2 Outbreak warning,False alarms (warnings with no outbreak),16.0,
+S6 Outbreaks + stock-ups,101,2 Outbreak warning,Country-months checked with no outbreak,110.0,"2024-10 to 2026-09, 5 countries"
+S6 Outbreaks + stock-ups,101,3 Equipment lead,Correlation: B 3-month vs A next month,-0.154,5 countries x 24 months
+S6 Outbreaks + stock-ups,101,3 Equipment lead,Analyser installations planted,0.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,Current rule: alerts raised,7.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",2.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,Stock-up-aware rule: alerts raised,5.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S6 Outbreaks + stock-ups,202,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,202,2 Outbreak warning,Months to first warning,,"Indonesia, starts 2024-01: not scored (needs 12 months of history)"
+S6 Outbreaks + stock-ups,202,2 Outbreak warning,Months to first warning,0.0,"Vietnam, starts 2025-09"
+S6 Outbreaks + stock-ups,202,2 Outbreak warning,Months to first warning,0.0,"Thailand, starts 2026-05"
+S6 Outbreaks + stock-ups,202,2 Outbreak warning,False alarms (warnings with no outbreak),7.0,
+S6 Outbreaks + stock-ups,202,2 Outbreak warning,Country-months checked with no outbreak,112.0,"2024-10 to 2026-09, 5 countries"
+S6 Outbreaks + stock-ups,202,3 Equipment lead,Correlation: B 3-month vs A next month,0.039,5 countries x 24 months
+S6 Outbreaks + stock-ups,202,3 Equipment lead,Analyser installations planted,0.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",1.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,"Current rule: false, other (noise)",1.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,Stock-up-aware rule: alerts raised,7.0,one alert = one customer-product
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",1.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S6 Outbreaks + stock-ups,303,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S6 Outbreaks + stock-ups,303,2 Outbreak warning,Months to first warning,,"Vietnam, starts 2024-02: not scored (needs 12 months of history)"
+S6 Outbreaks + stock-ups,303,2 Outbreak warning,Months to first warning,0.0,"Thailand, starts 2025-08"
+S6 Outbreaks + stock-ups,303,2 Outbreak warning,Months to first warning,1.0,"Singapore, starts 2026-05"
+S6 Outbreaks + stock-ups,303,2 Outbreak warning,False alarms (warnings with no outbreak),13.0,
+S6 Outbreaks + stock-ups,303,2 Outbreak warning,Country-months checked with no outbreak,112.0,"2024-10 to 2026-09, 5 countries"
+S6 Outbreaks + stock-ups,303,3 Equipment lead,Correlation: B 3-month vs A next month,-0.05,5 countries x 24 months
+S6 Outbreaks + stock-ups,303,3 Equipment lead,Analyser installations planted,0.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,Current rule: alerts raised,6.0,one alert = one customer-product
+S7 Equipment drives reagents,101,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,"Current rule: false, other (noise)",1.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,Current rule: fading customers caught,2.0,of 4
+S7 Equipment drives reagents,101,1 Drop-off alerts,Stock-up-aware rule: alerts raised,6.0,one alert = one customer-product
+S7 Equipment drives reagents,101,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",1.0,
+S7 Equipment drives reagents,101,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,2.0,of 4
+S7 Equipment drives reagents,101,2 Outbreak warning,False alarms (warnings with no outbreak),18.0,
+S7 Equipment drives reagents,101,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S7 Equipment drives reagents,101,3 Equipment lead,Correlation: B 3-month vs A next month,-0.091,5 countries x 24 months
+S7 Equipment drives reagents,101,3 Equipment lead,Analyser installations planted,19.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S7 Equipment drives reagents,202,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,"Current rule: false, other (noise)",1.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S7 Equipment drives reagents,202,1 Drop-off alerts,Stock-up-aware rule: alerts raised,7.0,one alert = one customer-product
+S7 Equipment drives reagents,202,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S7 Equipment drives reagents,202,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S7 Equipment drives reagents,202,2 Outbreak warning,False alarms (warnings with no outbreak),15.0,
+S7 Equipment drives reagents,202,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S7 Equipment drives reagents,202,3 Equipment lead,Correlation: B 3-month vs A next month,0.084,5 countries x 24 months
+S7 Equipment drives reagents,202,3 Equipment lead,Analyser installations planted,18.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,Current rule: alerts raised,3.0,one alert = one customer-product
+S7 Equipment drives reagents,303,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,Current rule: fading customers caught,2.0,of 4
+S7 Equipment drives reagents,303,1 Drop-off alerts,Stock-up-aware rule: alerts raised,3.0,one alert = one customer-product
+S7 Equipment drives reagents,303,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S7 Equipment drives reagents,303,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,2.0,of 4
+S7 Equipment drives reagents,303,2 Outbreak warning,False alarms (warnings with no outbreak),22.0,
+S7 Equipment drives reagents,303,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S7 Equipment drives reagents,303,3 Equipment lead,Correlation: B 3-month vs A next month,0.007,5 countries x 24 months
+S7 Equipment drives reagents,303,3 Equipment lead,Analyser installations planted,15.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,Current rule: alerts raised,3.0,one alert = one customer-product
+S8 New customer ramp-up,101,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,Current rule: fading customers caught,2.0,of 4
+S8 New customer ramp-up,101,1 Drop-off alerts,Stock-up-aware rule: alerts raised,3.0,one alert = one customer-product
+S8 New customer ramp-up,101,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S8 New customer ramp-up,101,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,2.0,of 4
+S8 New customer ramp-up,101,2 Outbreak warning,False alarms (warnings with no outbreak),11.0,
+S8 New customer ramp-up,101,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S8 New customer ramp-up,101,3 Equipment lead,Correlation: B 3-month vs A next month,0.023,5 countries x 24 months
+S8 New customer ramp-up,101,3 Equipment lead,Analyser installations planted,0.0,
+S8 New customer ramp-up,101,4 Faster setup,New customers,28.0,
+S8 New customer ramp-up,101,4 Faster setup,"Average approval days, today",16.8,
+S8 New customer ramp-up,101,4 Faster setup,"Average approval days, 3-day process",3.3,
+S8 New customer ramp-up,101,4 Faster setup,Customers whose first order comes >= 1 month earlier,9.0,first order inside the data window
+S8 New customer ramp-up,101,4 Faster setup,First-month units arriving >= 1 month earlier,947.0,"expected units, all products"
+S8 New customer ramp-up,101,4 Faster setup,Average delay in months (today vs 3-day),0.36,over all new customers
+S8 New customer ramp-up,101,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,2778.0,whole ramp shifts earlier; expected units
+S8 New customer ramp-up,202,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S8 New customer ramp-up,202,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S8 New customer ramp-up,202,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,202,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S8 New customer ramp-up,202,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S8 New customer ramp-up,202,1 Drop-off alerts,Stock-up-aware rule: alerts raised,8.0,one alert = one customer-product
+S8 New customer ramp-up,202,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,202,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S8 New customer ramp-up,202,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S8 New customer ramp-up,202,2 Outbreak warning,False alarms (warnings with no outbreak),13.0,
+S8 New customer ramp-up,202,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S8 New customer ramp-up,202,3 Equipment lead,Correlation: B 3-month vs A next month,0.025,5 countries x 24 months
+S8 New customer ramp-up,202,3 Equipment lead,Analyser installations planted,0.0,
+S8 New customer ramp-up,202,4 Faster setup,New customers,33.0,
+S8 New customer ramp-up,202,4 Faster setup,"Average approval days, today",19.5,
+S8 New customer ramp-up,202,4 Faster setup,"Average approval days, 3-day process",3.6,
+S8 New customer ramp-up,202,4 Faster setup,Customers whose first order comes >= 1 month earlier,19.0,first order inside the data window
+S8 New customer ramp-up,202,4 Faster setup,First-month units arriving >= 1 month earlier,1769.0,"expected units, all products"
+S8 New customer ramp-up,202,4 Faster setup,Average delay in months (today vs 3-day),0.58,over all new customers
+S8 New customer ramp-up,202,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,5705.0,whole ramp shifts earlier; expected units
+S8 New customer ramp-up,303,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S8 New customer ramp-up,303,1 Drop-off alerts,Current rule: alerts raised,7.0,one alert = one customer-product
+S8 New customer ramp-up,303,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,303,1 Drop-off alerts,"Current rule: false, other (noise)",1.0,
+S8 New customer ramp-up,303,1 Drop-off alerts,Current rule: fading customers caught,4.0,of 4
+S8 New customer ramp-up,303,1 Drop-off alerts,Stock-up-aware rule: alerts raised,7.0,one alert = one customer-product
+S8 New customer ramp-up,303,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S8 New customer ramp-up,303,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",1.0,
+S8 New customer ramp-up,303,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,4.0,of 4
+S8 New customer ramp-up,303,2 Outbreak warning,False alarms (warnings with no outbreak),12.0,
+S8 New customer ramp-up,303,2 Outbreak warning,Country-months checked with no outbreak,120.0,"2024-10 to 2026-09, 5 countries"
+S8 New customer ramp-up,303,3 Equipment lead,Correlation: B 3-month vs A next month,0.129,5 countries x 24 months
+S8 New customer ramp-up,303,3 Equipment lead,Analyser installations planted,0.0,
+S8 New customer ramp-up,303,4 Faster setup,New customers,39.0,
+S8 New customer ramp-up,303,4 Faster setup,"Average approval days, today",17.9,
+S8 New customer ramp-up,303,4 Faster setup,"Average approval days, 3-day process",3.5,
+S8 New customer ramp-up,303,4 Faster setup,Customers whose first order comes >= 1 month earlier,19.0,first order inside the data window
+S8 New customer ramp-up,303,4 Faster setup,First-month units arriving >= 1 month earlier,1043.0,"expected units, all products"
+S8 New customer ramp-up,303,4 Faster setup,Average delay in months (today vs 3-day),0.51,over all new customers
+S8 New customer ramp-up,303,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,3503.0,whole ramp shifts earlier; expected units
+S9 All new patterns,101,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S9 All new patterns,101,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S9 All new patterns,101,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",2.0,
+S9 All new patterns,101,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S9 All new patterns,101,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S9 All new patterns,101,1 Drop-off alerts,Stock-up-aware rule: alerts raised,6.0,one alert = one customer-product
+S9 All new patterns,101,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S9 All new patterns,101,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S9 All new patterns,101,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S9 All new patterns,101,2 Outbreak warning,Months to first warning,,"Indonesia, starts 2024-08: not scored (needs 12 months of history)"
+S9 All new patterns,101,2 Outbreak warning,Months to first warning,0.0,"Vietnam, starts 2025-07"
+S9 All new patterns,101,2 Outbreak warning,Months to first warning,1.0,"Vietnam, starts 2026-04"
+S9 All new patterns,101,2 Outbreak warning,False alarms (warnings with no outbreak),15.0,
+S9 All new patterns,101,2 Outbreak warning,Country-months checked with no outbreak,110.0,"2024-10 to 2026-09, 5 countries"
+S9 All new patterns,101,3 Equipment lead,Correlation: B 3-month vs A next month,0.117,5 countries x 24 months
+S9 All new patterns,101,3 Equipment lead,Analyser installations planted,23.0,
+S9 All new patterns,101,4 Faster setup,New customers,28.0,
+S9 All new patterns,101,4 Faster setup,"Average approval days, today",16.8,
+S9 All new patterns,101,4 Faster setup,"Average approval days, 3-day process",3.3,
+S9 All new patterns,101,4 Faster setup,Customers whose first order comes >= 1 month earlier,9.0,first order inside the data window
+S9 All new patterns,101,4 Faster setup,First-month units arriving >= 1 month earlier,947.0,"expected units, all products"
+S9 All new patterns,101,4 Faster setup,Average delay in months (today vs 3-day),0.36,over all new customers
+S9 All new patterns,101,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,2778.0,whole ramp shifts earlier; expected units
+S9 All new patterns,202,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S9 All new patterns,202,1 Drop-off alerts,Current rule: alerts raised,9.0,one alert = one customer-product
+S9 All new patterns,202,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",3.0,
+S9 All new patterns,202,1 Drop-off alerts,"Current rule: false, other (noise)",0.0,
+S9 All new patterns,202,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S9 All new patterns,202,1 Drop-off alerts,Stock-up-aware rule: alerts raised,6.0,one alert = one customer-product
+S9 All new patterns,202,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S9 All new patterns,202,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",0.0,
+S9 All new patterns,202,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S9 All new patterns,202,2 Outbreak warning,Months to first warning,,"Indonesia, starts 2024-01: not scored (needs 12 months of history)"
+S9 All new patterns,202,2 Outbreak warning,Months to first warning,0.0,"Vietnam, starts 2025-09"
+S9 All new patterns,202,2 Outbreak warning,Months to first warning,1.0,"Thailand, starts 2026-05"
+S9 All new patterns,202,2 Outbreak warning,False alarms (warnings with no outbreak),16.0,
+S9 All new patterns,202,2 Outbreak warning,Country-months checked with no outbreak,112.0,"2024-10 to 2026-09, 5 countries"
+S9 All new patterns,202,3 Equipment lead,Correlation: B 3-month vs A next month,0.206,5 countries x 24 months
+S9 All new patterns,202,3 Equipment lead,Analyser installations planted,23.0,
+S9 All new patterns,202,4 Faster setup,New customers,33.0,
+S9 All new patterns,202,4 Faster setup,"Average approval days, today",19.5,
+S9 All new patterns,202,4 Faster setup,"Average approval days, 3-day process",3.6,
+S9 All new patterns,202,4 Faster setup,Customers whose first order comes >= 1 month earlier,19.0,first order inside the data window
+S9 All new patterns,202,4 Faster setup,First-month units arriving >= 1 month earlier,1769.0,"expected units, all products"
+S9 All new patterns,202,4 Faster setup,Average delay in months (today vs 3-day),0.58,over all new customers
+S9 All new patterns,202,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,5705.0,whole ramp shifts earlier; expected units
+S9 All new patterns,303,1 Drop-off alerts,Genuinely fading customers (planted),4.0,
+S9 All new patterns,303,1 Drop-off alerts,Current rule: alerts raised,8.0,one alert = one customer-product
+S9 All new patterns,303,1 Drop-off alerts,"Current rule: false, stock-up in last 6 months",2.0,
+S9 All new patterns,303,1 Drop-off alerts,"Current rule: false, other (noise)",1.0,
+S9 All new patterns,303,1 Drop-off alerts,Current rule: fading customers caught,3.0,of 4
+S9 All new patterns,303,1 Drop-off alerts,Stock-up-aware rule: alerts raised,6.0,one alert = one customer-product
+S9 All new patterns,303,1 Drop-off alerts,"Stock-up-aware rule: false, stock-up in last 6 months",0.0,
+S9 All new patterns,303,1 Drop-off alerts,"Stock-up-aware rule: false, other (noise)",1.0,
+S9 All new patterns,303,1 Drop-off alerts,Stock-up-aware rule: fading customers caught,3.0,of 4
+S9 All new patterns,303,2 Outbreak warning,Months to first warning,,"Vietnam, starts 2024-02: not scored (needs 12 months of history)"
+S9 All new patterns,303,2 Outbreak warning,Months to first warning,0.0,"Thailand, starts 2025-08"
+S9 All new patterns,303,2 Outbreak warning,Months to first warning,1.0,"Singapore, starts 2026-05"
+S9 All new patterns,303,2 Outbreak warning,False alarms (warnings with no outbreak),14.0,
+S9 All new patterns,303,2 Outbreak warning,Country-months checked with no outbreak,112.0,"2024-10 to 2026-09, 5 countries"
+S9 All new patterns,303,3 Equipment lead,Correlation: B 3-month vs A next month,0.182,5 countries x 24 months
+S9 All new patterns,303,3 Equipment lead,Analyser installations planted,18.0,
+S9 All new patterns,303,4 Faster setup,New customers,39.0,
+S9 All new patterns,303,4 Faster setup,"Average approval days, today",17.9,
+S9 All new patterns,303,4 Faster setup,"Average approval days, 3-day process",3.5,
+S9 All new patterns,303,4 Faster setup,Customers whose first order comes >= 1 month earlier,19.0,first order inside the data window
+S9 All new patterns,303,4 Faster setup,First-month units arriving >= 1 month earlier,1043.0,"expected units, all products"
+S9 All new patterns,303,4 Faster setup,Average delay in months (today vs 3-day),0.51,over all new customers
+S9 All new patterns,303,4 Faster setup,Extra units ordered by Sep 2026 with 3-day setup,3503.0,whole ramp shifts earlier; expected units
